@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa: Strateginen Laskuri v16</title>
+    <title>Tori-Kauppa: Strateginen Laskuri v17</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
@@ -30,8 +30,8 @@
         .time-toggle button { border: none; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; }
         .time-toggle button.active { background: white; color: var(--tori-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .switch-container { display: flex; align-items: center; justify-content: space-between; background: #fdf2f2; padding: 10px; border-radius: 10px; margin: 15px 0; border: 1px solid #fee2e2; }
-        .switch-container label { margin: 0; cursor: pointer; }
         .hidden { display: none !important; }
+        .highlight-input { border: 2px solid var(--brand-color) !important; background: #fff8f8; }
     </style>
 </head>
 <body>
@@ -53,33 +53,39 @@
 <div id="roi-tab" class="tab-content active">
     <div class="container">
         <aside class="card">
-            <h2>Datan syöttö</h2>
+            <h2>Nykytila</h2>
             <div id="dateSelectorContainer" class="date-selectors">
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <div><label>Vuosi:</label><select id="yearSelect" onchange="updateMonthOptions()"></select></div>
                     <div><label>Kuukausi:</label><select id="monthSelect" onchange="applyFilteredData()"></select></div>
                 </div>
             </div>
-            <div class="input-group"><label>Ilmoitusmäärä (N Ads)</label><input type="number" id="totalAds" value="248" oninput="calculate()"></div>
+            <div class="input-group"><label>Ilmoitusmäärä (N Ads)</label><input type="number" id="totalAds" value="248" oninput="calculate(true)"></div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div><label>Nykyinen paketti</label><select id="pkgA" onchange="syncPrice('A')"></select></div>
-                <div><label>Liidit yhteensä</label><input type="number" id="leadsA" value="461" oninput="calculate()"></div>
+                <div><label>Nykyiset liidit</label><input type="number" id="leadsA" value="461" oninput="calculate(true)"></div>
             </div>
-            <div class="input-group"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate()"></select></div>
+            <div class="input-group"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate(true)"></select></div>
             
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                <div><label>Klousaus %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate()"></div>
-                <div><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="1000" oninput="calculate()"></div>
+                <div><label>Klousaus %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate(false)"></div>
+                <div><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="1000" oninput="calculate(false)"></div>
             </div>
 
             <div class="switch-container">
-                <label for="showProposal" style="font-size: 14px; color: var(--brand-color); font-weight: bold;">Näytä päivitysehdotus</label>
-                <input type="checkbox" id="showProposal" checked onchange="calculate()" style="width: 20px; height: 20px; cursor: pointer; margin: 0;">
+                <label for="showProposal" style="font-size: 14px; color: var(--brand-color); font-weight: bold; cursor: pointer;">Näytä päivitysehdotus</label>
+                <input type="checkbox" id="showProposal" checked onchange="calculate(true)" style="width: 20px; height: 20px; cursor: pointer; margin: 0;">
             </div>
 
             <div id="proposalInputs">
                 <label>Suositeltu paketti</label><select id="pkgB" onchange="syncPrice('B')"></select>
-                <div class="input-group"><label>Uusi hinta (€)</label><select id="priceB" onchange="calculate()"></select></div>
+                <div class="input-group"><label>Uusi hinta (€)</label><select id="priceB" onchange="calculate(false)"></select></div>
+                
+                <div class="input-group" style="margin-top:15px;">
+                    <label style="color: var(--brand-color);">Arvioidut liidit päivityksellä</label>
+                    <input type="number" id="leadsB_manual" class="highlight-input" oninput="calculate(false)">
+                    <small style="font-size: 10px; color: #666;">* Laskettu 4.7x tähtiteholla. Voit muuttaa lukua käsin.</small>
+                </div>
             </div>
         </aside>
         <main>
@@ -117,12 +123,9 @@
 
 <script>
 const PACKAGES = [
-    { name: "Starter", price: 99, stars: 5 }, 
-    { name: "Standard", price: 129, stars: 10 },
-    { name: "Advanced", price: 179, stars: 20 }, 
-    { name: "Plus", price: 279, stars: 50 },
-    { name: "Premium", price: 489, stars: 100 }, 
-    { name: "Starter Feed", price: 299, stars: 50 },
+    { name: "Starter", price: 99, stars: 5 }, { name: "Standard", price: 129, stars: 10 },
+    { name: "Advanced", price: 179, stars: 20 }, { name: "Plus", price: 279, stars: 50 },
+    { name: "Premium", price: 489, stars: 100 }, { name: "Starter Feed", price: 299, stars: 50 },
     { name: "Standard Feed", price: 599, stars: 150 }
 ];
 const PRICE_POINTS = [99, 129, 179, 279, 299, 489, 599];
@@ -180,7 +183,7 @@ function applyFilteredData() {
         document.getElementById('cpcClicks').value = row["N Ad Views"] || 0;
         const sum = (parseFloat(row["N Conversation Start"]) || 0) + (parseFloat(row["N Homepage Link Clicked"]) || 0) + (parseFloat(row["N Phone Leads"]) || 0);
         document.getElementById('leadsA').value = Math.round(sum);
-        calculate(); calculateCPC();
+        calculate(true); calculateCPC();
     }
 }
 
@@ -189,7 +192,7 @@ function setTimeframe(multiplier) {
     document.getElementById('toggleMonth').classList.toggle('active', multiplier === 1);
     document.getElementById('toggleYear').classList.toggle('active', multiplier === 12);
     document.querySelectorAll('.time-label').forEach(el => el.textContent = multiplier === 1 ? 'kk' : 'vuosi');
-    calculate();
+    calculate(false);
 }
 
 function openTab(evt, tabName) {
@@ -203,51 +206,65 @@ function syncPrice(type) {
     const idx = document.getElementById('pkg'+type).selectedIndex;
     document.getElementById('price'+type).value = PACKAGES[idx].price;
     if(type === 'A') document.getElementById('cpcPkg').selectedIndex = idx;
-    calculate();
+    calculate(true);
 }
 
-function calculate() {
+// Parametri autoUpdateLeads kertoo, pitääkö ennustettu liidimäärä laskea uusiksi
+function calculate(autoUpdateLeads) {
     const showProp = document.getElementById('showProposal').checked;
     document.getElementById('proposalInputs').classList.toggle('hidden', !showProp);
     document.getElementById('uiCardB').classList.toggle('hidden', !showProp);
     document.getElementById('statGrid').style.gridTemplateColumns = showProp ? "1fr 1fr" : "1fr";
 
     const n = parseFloat(document.getElementById('totalAds').value) || 1;
-    const leads = parseFloat(document.getElementById('leadsA').value) || 0;
+    const leadsA = parseFloat(document.getElementById('leadsA').value) || 0;
     const closing = (parseFloat(document.getElementById('closing').value) || 0) / 100;
     const avg = parseFloat(document.getElementById('avgPrice').value) || 0;
     const costA = parseFloat(document.getElementById('priceA').value) * timeMultiplier;
     
+    // 1. Lasketaan nykyinen teho (perusteho V)
     const M = 3.7;
-    const sA = Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars, n);
-    const v = leads / (n + (M * sA));
+    const pkgA = PACKAGES[document.getElementById('pkgA').selectedIndex];
+    const sA = Math.min(pkgA.stars, n);
+    const v = leadsA / (n + (M * sA));
 
-    const getR = (p, c) => {
-        const r = v * (n + (M * Math.min(p.stars, n))) * closing * avg * timeMultiplier;
-        return { rev: r, roi: c > 0 ? ((r-c)/c)*100 : 0 };
-    };
-    
-    const rA = getR(PACKAGES[document.getElementById('pkgA').selectedIndex], costA);
-    document.getElementById('uiRevA').textContent = Math.round(rA.rev).toLocaleString() + ' €';
-    document.getElementById('uiRoiA').textContent = 'ROI: ' + Math.round(rA.roi).toLocaleString() + '%';
+    // 2. Päivitetään ennustetut liidit vain tarvittaessa
+    if(autoUpdateLeads && showProp) {
+        const pkgB = PACKAGES[document.getElementById('pkgB').selectedIndex];
+        const sB = Math.min(pkgB.stars, n);
+        const projectedB = v * (n + (M * sB));
+        document.getElementById('leadsB_manual').value = Math.round(projectedB);
+    }
+
+    const leadsB_final = parseFloat(document.getElementById('leadsB_manual').value) || 0;
+
+    // 3. Lasketaan tuotot
+    const revA = leadsA * closing * avg * timeMultiplier;
+    const roiA = costA > 0 ? ((revA - costA) / costA) * 100 : 0;
+
+    document.getElementById('uiRevA').textContent = Math.round(revA).toLocaleString() + ' €';
+    document.getElementById('uiRoiA').textContent = 'ROI: ' + Math.round(roiA).toLocaleString() + '%';
 
     let xData = ['Nykyinen'];
     let yCost = [costA];
-    let yRev = [rA.rev];
+    let yRev = [revA];
 
     if(showProp) {
         const costB = parseFloat(document.getElementById('priceB').value) * timeMultiplier;
-        const rB = getR(PACKAGES[document.getElementById('pkgB').selectedIndex], costB);
-        document.getElementById('uiRevB').textContent = Math.round(rB.rev).toLocaleString() + ' €';
-        document.getElementById('uiRoiB').textContent = 'ROI: ' + Math.round(rB.roi).toLocaleString() + '%';
+        const revB = leadsB_final * closing * avg * timeMultiplier;
+        const roiB = costB > 0 ? ((revB - costB) / costB) * 100 : 0;
+        
+        document.getElementById('uiRevB').textContent = Math.round(revB).toLocaleString() + ' €';
+        document.getElementById('uiRoiB').textContent = 'ROI: ' + Math.round(roiB).toLocaleString() + '%';
+        
         xData.push('Ehdotus');
         yCost.push(costB);
-        yRev.push(rB.rev);
+        yRev.push(revB);
     }
 
     Plotly.newPlot('chartROI', [
-        { x: xData, y: yCost, name: 'Kulu', type: 'bar', marker: {color: '#005eff'}, text: yCost.map(v => Math.round(v)+'€'), textposition: 'auto' },
-        { x: xData, y: yRev, name: 'Tuotto', type: 'bar', marker: {color: '#f94f55'}, text: yRev.map(v => Math.round(v).toLocaleString()+'€'), textposition: 'auto' }
+        { x: xData, y: yCost, name: 'Kulu', type: 'bar', marker: {color: '#005eff'}, text: yCost.map(val => Math.round(val)+'€'), textposition: 'auto' },
+        { x: xData, y: yRev, name: 'Tuotto', type: 'bar', marker: {color: '#f94f55'}, text: yRev.map(val => Math.round(val).toLocaleString()+'€'), textposition: 'auto' }
     ], { barmode: 'group', title: timeMultiplier === 1 ? 'Kuukausitason potentiaali' : 'Vuositason potentiaali', margin: {t:60,b:40,l:50,r:20} }, {displayModeBar: false});
 }
 
