@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa: Strateginen Laskuri v11</title>
+    <title>Tori-Kauppa: Strateginen Laskuri v12</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
@@ -67,9 +67,7 @@
                 <div><label>Liidit yhteensä</label><input type="number" id="leadsA" value="461" oninput="calculate()"></div>
             </div>
             <div class="input-group"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate()"></select></div>
-            
             <hr style="border:0; border-top:2px solid #f1f5f9; margin:20px 0;">
-            
             <label>Suositeltu paketti</label><select id="pkgB" onchange="syncPrice('B')"></select>
             <div class="input-group"><label>Uusi hinta (€)</label><select id="priceB" onchange="calculate()"></select></div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
@@ -133,10 +131,17 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     reader.onload = function(e) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
-        uploadedData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+        const rawJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
         
-        // Hae uniikit vuodet
-        const years = [...new Set(uploadedData.map(row => row["Year of Event Date"]))].filter(Boolean).sort((a,b) => b-a);
+        // TÄYTTÖLOGIIKKA: Jos vuosi on tyhjä, käytetään edellisen rivin vuotta
+        let currentYear = "";
+        uploadedData = rawJson.map(row => {
+            if (row["Year of Event Date"]) currentYear = row["Year of Event Date"];
+            else row["Year of Event Date"] = currentYear;
+            return row;
+        });
+        
+        const years = [...new Set(uploadedData.map(row => String(row["Year of Event Date"])))].filter(y => y && y !== "").sort((a,b) => b-a);
         const ySelect = document.getElementById('yearSelect');
         ySelect.innerHTML = "";
         years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
@@ -149,7 +154,6 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
 
 function updateMonthOptions() {
     const selectedYear = document.getElementById('yearSelect').value;
-    // Suodata kuukaudet valitun vuoden perusteella
     const monthsForYear = [...new Set(uploadedData
         .filter(row => String(row["Year of Event Date"]) === selectedYear)
         .map(row => row["Month of Event Date"])
@@ -158,28 +162,19 @@ function updateMonthOptions() {
     const mSelect = document.getElementById('monthSelect');
     mSelect.innerHTML = "";
     monthsForYear.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
-    
     applyFilteredData();
 }
 
 function applyFilteredData() {
     const targetYear = document.getElementById('yearSelect').value;
     const targetMonth = document.getElementById('monthSelect').value;
-    
-    const row = uploadedData.find(r => 
-        String(r["Year of Event Date"]) === targetYear && 
-        r["Month of Event Date"] === targetMonth
-    );
+    const row = uploadedData.find(r => String(r["Year of Event Date"]) === targetYear && r["Month of Event Date"] === targetMonth);
     
     if(row) {
         document.getElementById('totalAds').value = row["N Ads"] || 0;
         document.getElementById('cpcClicks').value = row["N Ad Views"] || 0;
-        
-        const convStart = parseFloat(row["N Conversation Start"]) || 0;
-        const linkClicks = parseFloat(row["N Homepage Link Clicked"]) || 0;
-        const phoneLeads = parseFloat(row["N Phone Leads"]) || 0;
-        document.getElementById('leadsA').value = convStart + linkClicks + phoneLeads;
-        
+        const sum = (parseFloat(row["N Conversation Start"]) || 0) + (parseFloat(row["N Homepage Link Clicked"]) || 0) + (parseFloat(row["N Phone Leads"]) || 0);
+        document.getElementById('leadsA').value = Math.round(sum);
         calculate();
         calculateCPC();
     }
@@ -190,6 +185,7 @@ function openTab(evt, tabName) {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.getElementById(tabName).classList.add("active");
     evt.currentTarget.classList.add("active");
+    if(tabName === 'roi-tab') calculate(); else calculateCPC();
 }
 
 function syncPrice(type) {
@@ -212,12 +208,13 @@ function calculate() {
     const v = leads / (n + (M * sA));
 
     const getR = (p, c) => {
-        const r = v * (n + (M * Math.min(p.stars, n))) * closing * avg;
+        const s = Math.min(p.stars, n);
+        const r = v * (n + (M * s)) * closing * avg;
         return { rev: r, roi: c > 0 ? ((r-c)/c)*100 : 0 };
     };
     
     const rA = getR(PACKAGES[document.getElementById('pkgA').selectedIndex], costA);
-    const rB = getRes = getR(PACKAGES[document.getElementById('pkgB').selectedIndex], costB);
+    const rB = getR(PACKAGES[document.getElementById('pkgB').selectedIndex], costB);
 
     document.getElementById('uiRevA').textContent = Math.round(rA.rev).toLocaleString() + ' €';
     document.getElementById('uiRoiA').textContent = 'ROI: ' + Math.round(rA.roi).toLocaleString() + '%';
@@ -227,7 +224,7 @@ function calculate() {
     Plotly.newPlot('chartROI', [
         { x: ['Nykyinen', 'Ehdotus'], y: [costA, costB], name: 'Kulu', type: 'bar', marker: {color: '#005eff'}, text: [costA+'€', costB+'€'], textposition: 'auto' },
         { x: ['Nykyinen', 'Ehdotus'], y: [rA.rev, rB.rev], name: 'Tuotto', type: 'bar', marker: {color: '#ff5a00'}, text: [Math.round(rA.rev).toLocaleString()+'€', Math.round(rB.rev).toLocaleString()+'€'], textposition: 'auto' }
-    ], { barmode: 'group', title: 'Tuottopotentiaali vs. Kulu' }, {displayModeBar: false});
+    ], { barmode: 'group', title: 'Tuottopotentiaali vs. Kulu', margin: {t:40,b:40,l:50,r:20} }, {displayModeBar: false});
 }
 
 function calculateCPC() {
@@ -235,13 +232,11 @@ function calculateCPC() {
     const price = parseFloat(document.getElementById('cpcPrice').value) || 0;
     const comp = parseFloat(document.getElementById('compCPC').value) || 0;
     const tori = price / clicks;
-    
     document.getElementById('uiToriCPC').textContent = tori.toFixed(3) + ' €';
     if(tori > 0 && comp > 0) document.getElementById('cpcEfficiency').textContent = `Tori on ${Math.round(comp/tori)}x edullisempi.`;
-
     Plotly.newPlot('chartCPC', [
         { x: ['Tori CPC', 'Muu CPC'], y: [tori, comp], type: 'bar', marker: {color: ['#ff5a00', '#005eff']}, text: [tori.toFixed(3)+'€', comp+'€'], textposition: 'auto' }
-    ], { title: 'CPC-vertailu (€)', yaxis: {tickformat: '.3f'} }, {displayModeBar: false});
+    ], { title: 'CPC-vertailu (€)', yaxis: {tickformat: '.3f'}, margin: {t:40,b:40,l:50,r:20} }, {displayModeBar: false});
 }
 
 window.onload = init;
