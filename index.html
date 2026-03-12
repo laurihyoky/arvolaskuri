@@ -3,39 +3,39 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa: Strateginen Laskuri</title>
+    <title>Tori-Kauppa: Strateginen Laskuri v9</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
-        :root { 
-            --tori-orange: #ff5a00; 
-            --tori-blue: #005eff; 
-            --secondary: #334155; 
-            --bg: #f8fafc; 
-        }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: #1e293b; }
-        header { background: #fff; padding: 20px; text-align: center; border-bottom: 4px solid var(--tori-orange); }
+        :root { --tori-orange: #ff5a00; --tori-blue: #005eff; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #1e293b; }
+        header { background: #fff; padding: 20px; text-align: center; border-bottom: 4px solid var(--tori-orange); display: flex; justify-content: space-between; align-items: center; padding: 10px 40px; }
         .tabs { display: flex; justify-content: center; gap: 5px; margin: 20px 0; }
-        .tab-btn { padding: 10px 25px; border: none; background: #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .tab-btn { padding: 10px 25px; border: none; background: #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .tab-btn.active { background: var(--tori-blue); color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 380px 1fr; gap: 30px; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        h2 { font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; color: var(--tori-blue); }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: #475569; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-load { background: var(--tori-orange); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-load:hover { opacity: 0.9; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; }
         .stat-card { border: 2px solid #f1f5f9; padding: 20px; border-radius: 16px; text-align: center; background: #fff; }
-        .val { font-size: 32px; font-weight: 800; margin: 10px 0; color: var(--tori-orange); }
-        .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .roi-tag { background: #10b981; color: white; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; }
+        .val { font-size: 32px; font-weight: 800; color: var(--tori-orange); }
         #chartROI, #chartCPC { width: 100%; height: 380px; }
-        .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .hidden-input { display: none; }
     </style>
 </head>
 <body>
 
-<header><h1>Tori-Kauppa: Myyntityökalu</h1></header>
+<header>
+    <div style="font-weight: bold; font-size: 20px; color: var(--tori-blue);">tori</div>
+    <h1>Myyntityökalu</h1>
+    <div>
+        <button class="btn-load" onclick="document.getElementById('fileInput').click()">Lataa asiakkaan data</button>
+        <input type="file" id="fileInput" class="hidden-input" accept=".xlsx, .xls, .csv">
+    </div>
+</header>
 
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'roi-tab')">Arvolaskuri</button>
@@ -45,25 +45,24 @@
 <div id="roi-tab" class="tab-content active">
     <div class="container">
         <aside class="card">
-            <h2>Nykytilanne (Tableau)</h2>
-            <div class="input-group"><label>Ilmoituksia yhteensä</label><input type="number" id="totalAds" value="248" oninput="calculate()"></div>
-            <div class="grid-row">
-                <div class="input-group"><label>Nykyinen paketti</label><select id="pkgA" onchange="syncPrice('A')"></select></div>
-                <div class="input-group"><label>Liidit / kk</label><input type="number" id="leadsA" value="461" oninput="calculate()"></div>
+            <h2 style="color: var(--tori-blue);">Datan syöttö</h2>
+            <div id="dataStatus" style="font-size: 12px; margin-bottom: 10px; color: #059669;"></div>
+            <div class="input-group"><label>Ilmoitusmäärä (kpl)</label><input type="number" id="totalAds" value="248" oninput="calculate()"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>Paketti</label><select id="pkgA" onchange="syncPrice('A')"></select></div>
+                <div><label>Liidit/kk</label><input type="number" id="leadsA" value="461" oninput="calculate()"></div>
             </div>
-            <div class="input-group"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate()"></select></div>
             <hr style="border:0; border-top:2px solid #f1f5f9; margin:20px 0;">
-            <div class="input-group"><label>Uusi paketti</label><select id="pkgB" onchange="syncPrice('B')"></select></div>
-            <div class="input-group"><label>Uusi hinta (€)</label><select id="priceB" onchange="calculate()"></select></div>
-            <div class="grid-row">
-                <div class="input-group"><label>Klousaus %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate()"></div>
-                <div class="input-group"><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="1000" oninput="calculate()"></div>
+            <label>Suositeltu paketti</label><select id="pkgB" onchange="syncPrice('B')"></select>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                <div><label>Klousaus %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate()"></div>
+                <div><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="1000" oninput="calculate()"></div>
             </div>
         </aside>
         <main>
-            <div class="comparison-grid">
-                <div class="stat-card"><h3>Nykyinen</h3><div class="val" id="uiRevA">0 €</div><div class="roi-tag" id="uiRoiA">ROI: 0%</div></div>
-                <div class="stat-card"><h3>Ehdotus</h3><div class="val" id="uiRevB">0 €</div><div class="roi-tag" id="uiRoiB">ROI: 0%</div></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+                <div class="stat-card"><h3>Nykyinen</h3><div class="val" id="uiRevA">0 €</div></div>
+                <div class="stat-card"><h3>Ehdotus</h3><div class="val" id="uiRevB">0 €</div></div>
             </div>
             <div class="card"><div id="chartROI"></div></div>
         </main>
@@ -73,57 +72,57 @@
 <div id="cpc-tab" class="tab-content">
     <div class="container">
         <aside class="card">
-            <h2>Hinta per klikkaus</h2>
-            <div class="input-group">
-                <label>Ilmoitusten katselukerrat / kk</label>
-                <input type="number" id="cpcClicks" value="112000" oninput="calculateCPC()">
-            </div>
-            <div class="input-group">
-                <label>Valitse paketti</label>
-                <select id="cpcPkg" onchange="calculateCPC()"></select>
-            </div>
-            <div class="input-group">
-                <label>Paketin hinta (€)</label>
-                <select id="cpcPrice" onchange="calculateCPC()"></select>
-            </div>
-            <hr style="border:0; border-top:2px solid #f1f5f9; margin:20px 0;">
-            <div class="input-group">
-                <label>Vertailun CPC (Google/Meta) €</label>
-                <input type="number" id="compCPC" value="0.50" step="0.05" oninput="calculateCPC()">
-            </div>
+            <h2 style="color: var(--tori-blue);">CPC-analyysi</h2>
+            <label>Katselukerrat / kk</label><input type="number" id="cpcClicks" value="112000" oninput="calculateCPC()">
+            <label style="margin-top:10px;">Vertailun CPC (€)</label><input type="number" id="compCPC" value="0.50" step="0.05" oninput="calculateCPC()">
         </aside>
         <main>
-            <div class="stat-card" style="margin-bottom: 20px;">
-                <h3>Tori-Kaupan klikkaushinta</h3>
-                <div class="val" id="uiToriCPC">0,000 €</div>
-                <p id="cpcEfficiency" style="font-weight: 600; color: #10b981; margin: 0;"></p>
-            </div>
-            <div class="card"><div id="chartCPC"></div></div>
+            <div class="stat-card"><div class="val" id="uiToriCPC">0,000 €</div><p id="cpcEfficiency"></p></div>
+            <div class="card" style="margin-top:20px;"><div id="chartCPC"></div></div>
         </main>
     </div>
 </div>
 
 <script>
 const PACKAGES = [
-    { name: "Starter", price: 99, stars: 5 },
-    { name: "Standard", price: 129, stars: 10 },
-    { name: "Advanced", price: 179, stars: 20 },
-    { name: "Plus", price: 279, stars: 50 },
-    { name: "Premium", price: 489, stars: 100 },
-    { name: "Standard Feed", price: 599, stars: 150 }
+    { name: "Starter", price: 99, stars: 5 }, { name: "Standard", price: 129, stars: 10 },
+    { name: "Advanced", price: 179, stars: 20 }, { name: "Plus", price: 279, stars: 50 },
+    { name: "Premium", price: 489, stars: 100 }, { name: "Standard Feed", price: 599, stars: 150 }
 ];
-const PRICE_POINTS = [99, 129, 179, 279, 299, 489, 599];
 
 function init() {
-    ['pkgA', 'pkgB', 'cpcPkg'].forEach(id => {
+    ['pkgA', 'pkgB'].forEach(id => {
         PACKAGES.forEach((p, i) => document.getElementById(id).innerHTML += `<option value="${i}">${p.name}</option>`);
     });
-    ['priceA', 'priceB', 'cpcPrice'].forEach(id => {
-        PRICE_POINTS.forEach(v => document.getElementById(id).innerHTML += `<option value="${v}">${v} €</option>`);
-    });
     document.getElementById('pkgA').selectedIndex = 3; document.getElementById('pkgB').selectedIndex = 4;
-    document.getElementById('cpcPkg').selectedIndex = 3; syncPrice('A'); syncPrice('B'); calculateCPC();
+    calculate();
 }
+
+// TIEDOSTON LUKEMINEN (Sama logiikka kuin kuluanalysaattorissa)
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+        
+        // Etsitään arvot sarakkeista (esim. Tableau exportin tyypilliset nimet)
+        if(json.length > 0) {
+            const row = json[0]; 
+            // Nämä avaimet kannattaa tarkistaa Tableau-exportista
+            document.getElementById('totalAds').value = row["Ilmoituksia"] || row["Ads"] || 248;
+            document.getElementById('leadsA').value = row["Liidejä"] || row["Leads"] || 461;
+            document.getElementById('cpcClicks').value = row["Katselukerrat"] || row["Views"] || 112000;
+            
+            document.getElementById('dataStatus').textContent = "✓ Data ladattu tiedostosta: " + file.name;
+            calculate();
+            calculateCPC();
+        }
+    };
+    reader.readAsArrayBuffer(file);
+});
 
 function openTab(evt, tabName) {
     document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
@@ -133,86 +132,42 @@ function openTab(evt, tabName) {
     if(tabName === 'roi-tab') calculate(); else calculateCPC();
 }
 
-function syncPrice(type) {
-    const idx = document.getElementById('pkg'+type).selectedIndex;
-    document.getElementById('price'+type).value = PACKAGES[idx].price;
-    calculate();
-}
-
 function calculate() {
-    const totalAds = Math.max(parseFloat(document.getElementById('totalAds').value) || 1, 1);
-    const leadsIn = parseFloat(document.getElementById('leadsA').value) || 0;
+    const n = parseFloat(document.getElementById('totalAds').value) || 1;
+    const leads = parseFloat(document.getElementById('leadsA').value) || 0;
     const closing = (parseFloat(document.getElementById('closing').value) || 0) / 100;
-    const avgPrice = parseFloat(document.getElementById('avgPrice').value) || 0;
-    const costA = parseFloat(document.getElementById('priceA').value);
-    const costB = parseFloat(document.getElementById('priceB').value);
+    const avg = parseFloat(document.getElementById('avgPrice').value) || 0;
+    const costA = PACKAGES[document.getElementById('pkgA').selectedIndex].price;
+    const costB = PACKAGES[document.getElementById('pkgB').selectedIndex].price;
     
-    const M = 3.7;
-    const sA = Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars, totalAds);
-    const v = leadsIn / (totalAds + (M * sA));
-
-    const getRes = (pkg, cost) => {
-        const s = Math.min(pkg.stars, totalAds);
-        const rev = v * (totalAds + (M * s)) * closing * avgPrice;
-        return { rev, roi: cost > 0 ? ((rev - cost) / cost) * 100 : 0 };
+    const v = leads / (n + (3.7 * Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars, n)));
+    const getR = (p, c) => {
+        const r = v * (n + (3.7 * Math.min(p.stars, n))) * closing * avg;
+        return { rev: r, roi: ((r-c)/c)*100 };
     };
-
-    const rA = getRes(PACKAGES[document.getElementById('pkgA').selectedIndex], costA);
-    const rB = getRes(PACKAGES[document.getElementById('pkgB').selectedIndex], costB);
+    const rA = getR(PACKAGES[document.getElementById('pkgA').selectedIndex], costA);
+    const rB = getR(PACKAGES[document.getElementById('pkgB').selectedIndex], costB);
 
     document.getElementById('uiRevA').textContent = Math.round(rA.rev).toLocaleString() + ' €';
-    document.getElementById('uiRoiA').textContent = 'ROI: ' + Math.round(rA.roi).toLocaleString() + '%';
     document.getElementById('uiRevB').textContent = Math.round(rB.rev).toLocaleString() + ' €';
-    document.getElementById('uiRoiB').textContent = 'ROI: ' + Math.round(rB.roi).toLocaleString() + '%';
 
     Plotly.newPlot('chartROI', [
-        { 
-            x: ['Nykyinen', 'Ehdotus'], 
-            y: [costA, costB], 
-            name: 'Investointi', 
-            type: 'bar', 
-            marker: {color: '#005eff'}, 
-            text: [costA + ' €', costB + ' €'], 
-            textposition: 'auto' 
-        },
-        { 
-            x: ['Nykyinen', 'Ehdotus'], 
-            y: [rA.rev, rB.rev], 
-            name: 'Tuotto', 
-            type: 'bar', 
-            marker: {color: '#ff5a00'}, 
-            text: [Math.round(rA.rev).toLocaleString() + ' €', Math.round(rB.rev).toLocaleString() + ' €'], 
-            textposition: 'auto' 
-        }
-    ], { barmode: 'group', title: 'Tuottopotentiaali (€)' }, {displayModeBar: false});
+        { x: ['Nykyinen', 'Ehdotus'], y: [costA, costB], name: 'Kulu', type: 'bar', marker: {color: '#005eff'}, text: [costA+'€', costB+'€'], textposition: 'auto' },
+        { x: ['Nykyinen', 'Ehdotus'], y: [rA.rev, rB.rev], name: 'Tuotto', type: 'bar', marker: {color: '#ff5a00'}, text: [Math.round(rA.rev)+'€', Math.round(rB.rev)+'€'], textposition: 'auto' }
+    ], { barmode: 'group', title: 'Tuotto vs. Kulu' }, {displayModeBar: false});
 }
 
 function calculateCPC() {
     const clicks = parseFloat(document.getElementById('cpcClicks').value) || 1;
-    const price = parseFloat(document.getElementById('cpcPrice').value) || 0;
-    const compCPC = parseFloat(document.getElementById('compCPC').value) || 0;
-
-    const toriCPC = price / clicks;
-    document.getElementById('uiToriCPC').textContent = toriCPC.toFixed(3) + ' €';
-
-    if (toriCPC > 0 && compCPC > 0) {
-        const factor = compCPC / toriCPC;
-        document.getElementById('cpcEfficiency').textContent = `Tori on ${Math.round(factor)}x edullisempi kuin muu media.`;
-    }
-
+    const cost = PACKAGES[document.getElementById('pkgA').selectedIndex].price;
+    const comp = parseFloat(document.getElementById('compCPC').value) || 0;
+    const tori = cost / clicks;
+    document.getElementById('uiToriCPC').textContent = tori.toFixed(3) + ' €';
+    if(tori > 0 && comp > 0) document.getElementById('cpcEfficiency').textContent = `Tori on ${Math.round(comp/tori)}x edullisempi.`;
+    
     Plotly.newPlot('chartCPC', [
-        { 
-            x: ['Tori-Kauppa CPC', 'Muu media CPC'], 
-            y: [toriCPC, compCPC], 
-            type: 'bar', 
-            marker: {color: ['#ff5a00', '#005eff']},
-            text: [toriCPC.toFixed(3) + ' €', compCPC.toFixed(2) + ' €'],
-            textposition: 'auto'
-        }
-    ], { 
-        title: 'Hinta per klikkaus (CPC) vertailu', 
-        yaxis: { title: 'Euroa per klikkaus (€)', tickformat: '.2f' } 
-    }, {displayModeBar: false});
+        { x: ['Tori CPC', 'Muu CPC'], y: [tori, comp], type: 'bar', marker: {color: ['#ff5a00', '#005eff']}, text: [tori.toFixed(3)+'€', comp+'€'], textposition: 'auto' }
+    ], { title: 'CPC-vertailu' }, {displayModeBar: false});
 }
 
 window.onload = init;
