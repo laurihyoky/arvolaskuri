@@ -3,110 +3,148 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa: Arvoanalyysi (4.7x)</title>
+    <title>Tori-Kauppa: Strateginen Laskuri</title>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
         :root { --primary: #ff5a00; --secondary: #334155; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #1e293b; }
-        header { background: #fff; padding: 20px; text-align: center; border-bottom: 4px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .container { max-width: 1200px; margin: 25px auto; padding: 0 20px; display: grid; grid-template-columns: 380px 1fr; gap: 30px; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: #1e293b; }
+        header { background: #fff; padding: 20px; text-align: center; border-bottom: 4px solid var(--primary); }
+        
+        /* Välilehtien tyylit */
+        .tabs { display: flex; justify-content: center; gap: 5px; margin: 20px 0; }
+        .tab-btn { padding: 10px 25px; border: none; background: #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 380px 1fr; gap: 30px; }
         .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; }
+        h2 { font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; }
         .input-group { margin-bottom: 15px; }
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: #475569; }
         input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        
         .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
         .stat-card { border: 2px solid #f1f5f9; padding: 20px; border-radius: 16px; text-align: center; background: #fff; }
-        .stat-card.featured { border-color: var(--primary); background: #fffaf7; }
+        /* Korostus poistettu, molemmat kortit samanlaisia */
+        
         .val { font-size: 26px; font-weight: 800; margin: 10px 0; color: var(--primary); }
         .roi-tag { background: #10b981; color: white; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; }
-        #chart { width: 100%; height: 380px; }
+        .cpc-box { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-top: 10px; }
+        #chartROI, #chartCPC { width: 100%; height: 380px; }
         .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Tori-Kauppa: Strateginen ROI-laskuri</h1>
-    <p style="margin:5px 0 0; color:#64748b;">Konservatiivinen ennustemalli ($4,7\times$ tähtiteho)</p>
+    <h1>Tori-Kauppa: Myyntityökalu</h1>
 </header>
 
-<div class="container">
-    <aside class="card">
-        <h2>1. Nykytilanne</h2>
-        <div class="input-group">
-            <label>Ilmoitusmäärä yhteensä</label>
-            <input type="number" id="totalAds" value="248" oninput="calculate()">
-        </div>
-        <div class="input-group">
-            <label>Nykyinen paketti</label>
-            <select id="pkgA" onchange="syncPrice('A')"></select>
-        </div>
-        <div class="grid-row">
+<div class="tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'roi-tab')">Arvolaskuri</button>
+    <button class="tab-btn" onclick="openTab(event, 'cpc-tab')">CPC-laskuri</button>
+</div>
+
+<div id="roi-tab" class="tab-content active">
+    <div class="container">
+        <aside class="card">
+            <h2>Asiakkaan lähtötiedot</h2>
             <div class="input-group">
-                <label>Hinta (€)</label>
+                <label>Ilmoitusmäärä yhteensä</label>
+                <input type="number" id="totalAds" value="248" oninput="calculate()">
+            </div>
+            <div class="grid-row">
+                <div class="input-group">
+                    <label>Nykyinen paketti</label>
+                    <select id="pkgA" onchange="syncPrice('A')"></select>
+                </div>
+                <div class="input-group">
+                    <label>Liidit / kk</label>
+                    <input type="number" id="leadsA" value="461" oninput="calculate()">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Nykyinen hinta (€)</label>
                 <select id="priceA" onchange="calculate()"></select>
             </div>
+            <hr style="border:0; border-top:2px solid #f1f5f9; margin:20px 0;">
             <div class="input-group">
-                <label>Liidit / kk</label>
-                <input type="number" id="leadsA" value="461" oninput="calculate()">
-            </div>
-        </div>
-
-        <hr style="border:0; border-top:1px solid #f1f5f9; margin:20px 0;">
-
-        <h2>2. Suositeltu päivitys</h2>
-        <div class="input-group">
-            <label>Uusi paketti</label>
-            <select id="pkgB" onchange="syncPrice('B')"></select>
-        </div>
-        <div class="input-group">
-            <label>Uusi hinta (€)</label>
-            <select id="priceB" onchange="calculate()"></select>
-        </div>
-        <div class="grid-row">
-            <div class="input-group">
-                <label>Konversio %</label>
-                <input type="number" id="closing" value="2.0" step="0.5" oninput="calculate()">
+                <label>Uusi paketti</label>
+                <select id="pkgB" onchange="syncPrice('B')"></select>
             </div>
             <div class="input-group">
-                <label>Keskihinta (€)</label>
-                <input type="number" id="avgPrice" value="1000" oninput="calculate()">
+                <label>Uusi hinta (€)</label>
+                <select id="priceB" onchange="calculate()"></select>
             </div>
-        </div>
-    </aside>
-
-    <main>
-        <div class="comparison-grid">
-            <div class="stat-card">
-                <h3 id="uiNameA">-</h3>
-                <div style="font-size:12px; color:#64748b;">Investointi: <span id="uiCostA">0</span> €</div>
-                <div class="val" id="uiRevA">0 €</div>
-                <div class="roi-tag" id="uiRoiA">ROI: 0%</div>
-                <div style="margin-top:12px; font-size:11px; color:#94a3b8;">
-                    Tähdet: <b id="uiStarsA">0</b> | Peitto: <b id="uiCovA">0%</b>
+            <div class="grid-row">
+                <div class="input-group">
+                    <label>Klousaus %</label>
+                    <input type="number" id="closing" value="2.0" step="0.5" oninput="calculate()">
+                </div>
+                <div class="input-group">
+                    <label>Keskihinta (€)</label>
+                    <input type="number" id="avgPrice" value="1000" oninput="calculate()">
                 </div>
             </div>
+        </aside>
 
-            <div class="stat-card featured">
-                <h3 id="uiNameB">-</h3>
-                <div style="font-size:12px; color:#64748b;">Investointi: <span id="uiCostB">0</span> €</div>
-                <div class="val" id="uiRevB">0 €</div>
-                <div class="roi-tag" id="uiRoiB">ROI: 0%</div>
-                <div style="margin-top:12px; font-size:11px; color:#94a3b8;">
-                    Tähdet: <b id="uiStarsB">0</b> | Peitto: <b id="uiCovB">0%</b>
+        <main>
+            <div class="comparison-grid">
+                <div class="stat-card" id="cardA">
+                    <h3 id="uiNameA">-</h3>
+                    <div class="val" id="uiRevA">0 €</div>
+                    <div class="roi-tag" id="uiRoiA">ROI: 0%</div>
+                    <div style="margin-top:12px; font-size:11px; color:#64748b;">
+                        Tähdet: <b id="uiStarsA">0</b> | Peitto: <b id="uiCovA">0%</b>
+                    </div>
+                </div>
+                <div class="stat-card" id="cardB">
+                    <h3 id="uiNameB">-</h3>
+                    <div class="val" id="uiRevB">0 €</div>
+                    <div class="roi-tag" id="uiRoiB">ROI: 0%</div>
+                    <div style="margin-top:12px; font-size:11px; color:#64748b;">
+                        Tähdet: <b id="uiStarsB">0</b> | Peitto: <b id="uiCovB">0%</b>
+                    </div>
                 </div>
             </div>
-        </div>
+            <div class="card"><div id="chartROI"></div></div>
+        </main>
+    </div>
+</div>
 
-        <div class="card">
-            <div id="chart"></div>
-            <p style="font-size:11px; color:#94a3b8; margin-top:15px; font-style:italic;">
-                * Ennustemalli: Tähdellinen ilmoitus on $4,7\times$ tehokkaampi kuin tähdetön. 
-                Laskenta huomioi ilmoitusmassan suhteessa paketin tähtimäärään.
-            </p>
-        </div>
-    </main>
+<div id="cpc-tab" class="tab-content">
+    <div class="container">
+        <aside class="card">
+            <h2>CPC-vertailu</h2>
+            <div class="input-group">
+                <label>Ilmoitusten katselukerrat / kk</label>
+                <input type="number" id="cpcClicks" value="112000" oninput="calculateCPC()">
+            </div>
+            <div class="input-group">
+                <label>Valitse Tori-paketti</label>
+                <select id="cpcPkg" onchange="calculateCPC()"></select>
+            </div>
+            <div class="input-group">
+                <label>Paketin hinta (€)</label>
+                <select id="cpcPrice" onchange="calculateCPC()"></select>
+            </div>
+            <hr style="border:0; border-top:2px solid #f1f5f9; margin:20px 0;">
+            <div class="input-group">
+                <label>Vertailun CPC (esm. Google/Meta) €</label>
+                <input type="number" id="compCPC" value="0.50" step="0.05" oninput="calculateCPC()">
+            </div>
+        </aside>
+
+        <main>
+            <div class="stat-card" style="margin-bottom: 20px;">
+                <h3>Tori-Kaupan klikkaushinta</h3>
+                <div class="val" id="uiToriCPC">0,000 €</div>
+                <p id="cpcSavings" style="font-weight: 600; color: #10b981;"></p>
+            </div>
+            <div class="card"><div id="chartCPC"></div></div>
+        </main>
+    </div>
 </div>
 
 <script>
@@ -118,38 +156,43 @@ const PACKAGES = [
     { name: "Premium", price: 489, stars: 100 },
     { name: "Standard Feed", price: 599, stars: 150 }
 ];
-
 const PRICE_POINTS = [99, 129, 179, 279, 299, 489, 599];
 
-// Alusta valikot
 function init() {
-    const selA = document.getElementById('pkgA');
-    const selB = document.getElementById('pkgB');
-    const priA = document.getElementById('priceA');
-    const priB = document.getElementById('priceB');
+    const selects = ['pkgA', 'pkgB', 'cpcPkg'];
+    const priceSelects = ['priceA', 'priceB', 'cpcPrice'];
 
-    PACKAGES.forEach((p, i) => {
-        const opt = `<option value="${i}">${p.name} (${p.stars}*)</option>`;
-        selA.innerHTML += opt;
-        selB.innerHTML += opt;
+    selects.forEach(sId => {
+        const el = document.getElementById(sId);
+        PACKAGES.forEach((p, i) => { el.innerHTML += `<option value="${i}">${p.name} (${p.stars}*)</option>`; });
     });
 
-    PRICE_POINTS.forEach(v => {
-        const opt = `<option value="${v}">${v} €</option>`;
-        priA.innerHTML += opt;
-        priB.innerHTML += opt;
+    priceSelects.forEach(pId => {
+        const el = document.getElementById(pId);
+        PRICE_POINTS.forEach(v => { el.innerHTML += `<option value="${v}">${v} €</option>`; });
     });
 
-    selA.selectedIndex = 3; // Plus
-    selB.selectedIndex = 4; // Premium
-    syncPrice('A');
-    syncPrice('B');
+    document.getElementById('pkgA').selectedIndex = 3;
+    document.getElementById('pkgB').selectedIndex = 4;
+    document.getElementById('cpcPkg').selectedIndex = 3;
+    syncPrice('A'); syncPrice('B');
+    calculateCPC();
+}
+
+function openTab(evt, tabName) {
+    let i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) { tabcontent[i].className = tabcontent[i].className.replace(" active", ""); }
+    tablinks = document.getElementsByClassName("tab-btn");
+    for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+    document.getElementById(tabName).className += " active";
+    evt.currentTarget.className += " active";
+    if(tabName === 'roi-tab') calculate(); else calculateCPC();
 }
 
 function syncPrice(type) {
     const pkgIdx = document.getElementById('pkg'+type).selectedIndex;
-    const targetPrice = PACKAGES[pkgIdx].price;
-    document.getElementById('price'+type).value = targetPrice;
+    document.getElementById('price'+type).value = PACKAGES[pkgIdx].price;
     calculate();
 }
 
@@ -164,12 +207,7 @@ function calculate() {
     const costA = parseFloat(document.getElementById('priceA').value);
     const costB = parseFloat(document.getElementById('priceB').value);
 
-    // MULTIPLIER LOGIIKKA (4.7x)
-    // Kerroin 4.7 tarkoittaa, että lisäarvo on 3.7 per tähti.
-    const M = 3.7; 
-    
-    // 1. Lasketaan perusteho V nykyisestä tilanteesta
-    // Kaava: Leads = V * (TotalAds + M * Stars)
+    const M = 3.7; // 4.7x teho
     const sA = Math.min(pkgA.stars, totalAds);
     const v = leadsIn / (totalAds + (M * sA));
 
@@ -178,39 +216,46 @@ function calculate() {
         const projectedLeads = v * (totalAds + (M * s));
         const revenue = projectedLeads * closing * avgPrice;
         const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
-        const coverage = (s / totalAds) * 100;
-        return { rev: revenue, roi: roi, stars: pkg.stars, cov: coverage, leads: projectedLeads };
+        return { rev: revenue, roi: roi, stars: pkg.stars, cov: (s/totalAds)*100 };
     };
 
     const resA = getStats(pkgA, costA);
     const resB = getStats(pkgB, costB);
 
-    // Päivitä UI
-    const updateCard = (id, res, cost, pkg) => {
+    const updateCard = (id, res, pkg) => {
         document.getElementById('uiName'+id).textContent = pkg.name;
-        document.getElementById('uiCost'+id).textContent = cost.toLocaleString();
         document.getElementById('uiRev'+id).textContent = Math.round(res.rev).toLocaleString() + ' €';
         document.getElementById('uiRoi'+id).textContent = 'ROI: ' + Math.round(res.roi).toLocaleString() + '%';
         document.getElementById('uiStars'+id).textContent = res.stars;
         document.getElementById('uiCov'+id).textContent = Math.round(res.cov) + '%';
     };
 
-    updateCard('A', resA, costA, pkgA);
-    updateCard('B', resB, costB, pkgB);
+    updateCard('A', resA, pkgA); updateCard('B', resB, pkgB);
 
-    // Visualisointi
-    Plotly.newPlot('chart', [
-        { x: [pkgA.name, pkgB.name], y: [costA, costB], name: 'Investointi', type: 'bar', marker: {color: '#334155'} },
-        { x: [pkgA.name, pkgB.name], y: [resA.rev, resB.rev], name: 'Tuottopotentiaali', type: 'bar', marker: {color: '#ff5a00'} }
-    ], {
-        barmode: 'group',
-        title: 'Investointi vs. Arvioitu tuotto',
-        yaxis: { title: 'Euroa (€)' },
-        legend: { orientation: 'h', y: -0.2 }
-    }, {displayModeBar: false});
+    Plotly.newPlot('chartROI', [
+        { x: [pkgA.name, pkgB.name], y: [costA, costB], name: 'Kulu', type: 'bar', marker: {color: '#334155'} },
+        { x: [pkgA.name, pkgB.name], y: [resA.rev, resB.rev], name: 'Tuotto', type: 'bar', marker: {color: '#ff5a00'} }
+    ], { barmode: 'group', title: 'Tuotto vs. Kulu', margin: {t:40,b:40,l:50,r:20} }, {displayModeBar: false});
 }
 
-init();
+function calculateCPC() {
+    const clicks = parseFloat(document.getElementById('cpcClicks').value) || 1;
+    const price = parseFloat(document.getElementById('cpcPrice').value) || 0;
+    const compCPC = parseFloat(document.getElementById('compCPC').value) || 0;
+
+    const toriCPC = price / clicks;
+    const compTotal = clicks * compCPC;
+
+    document.getElementById('uiToriCPC').textContent = toriCPC.toFixed(3) + ' €';
+    const savings = compTotal - price;
+    document.getElementById('cpcSavings').textContent = savings > 0 ? `Säästö verrattuna muuhun mediaan: ${Math.round(savings).toLocaleString()} €/kk` : "";
+
+    Plotly.newPlot('chartCPC', [
+        { x: ['Tori-Kauppa', 'Muu media'], y: [price, compTotal], type: 'bar', marker: {color: ['#ff5a00', '#334155']} }
+    ], { title: 'Kokonaiskustannus samalla liikennemäärällä (€)', margin: {t:40,b:40,l:50,r:20} }, {displayModeBar: false});
+}
+
+window.onload = init;
 </script>
 </body>
 </html>
