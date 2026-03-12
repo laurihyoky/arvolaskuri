@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa: Strateginen Laskuri v10</title>
+    <title>Tori-Kauppa: Strateginen Laskuri v11</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
@@ -24,6 +24,7 @@
         .val { font-size: 32px; font-weight: 800; color: var(--tori-orange); }
         .roi-tag { background: #10b981; color: white; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; }
         #chartROI, #chartCPC { width: 100%; height: 380px; }
+        .date-selectors { display: none; margin-bottom: 15px; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #d1e5ff; }
     </style>
 </head>
 <body>
@@ -47,9 +48,17 @@
         <aside class="card">
             <h2>Datan syöttö</h2>
             
-            <div id="monthSelectorContainer" style="display:none; margin-bottom: 15px; background: #f0f7ff; padding: 10px; border-radius: 8px;">
-                <label style="color: var(--tori-blue);">Valitse kuukausi datasta:</label>
-                <select id="monthSelect" onchange="applyMonthData()"></select>
+            <div id="dateSelectorContainer" class="date-selectors">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="color: var(--tori-blue);">Vuosi:</label>
+                        <select id="yearSelect" onchange="updateMonthOptions()"></select>
+                    </div>
+                    <div>
+                        <label style="color: var(--tori-blue);">Kuukausi:</label>
+                        <select id="monthSelect" onchange="applyFilteredData()"></select>
+                    </div>
+                </div>
             </div>
 
             <div class="input-group"><label>Ilmoitusmäärä (N Ads)</label><input type="number" id="totalAds" value="248" oninput="calculate()"></div>
@@ -119,7 +128,6 @@ function init() {
     document.getElementById('cpcPkg').selectedIndex = 3; syncPrice('A'); syncPrice('B');
 }
 
-// TIEDOSTON LUKU JA KUUKAUSIVALITSIN
 document.getElementById('fileInput').addEventListener('change', function(e) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -127,26 +135,46 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
         const workbook = XLSX.read(data, {type: 'array'});
         uploadedData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
         
-        const months = [...new Set(uploadedData.map(row => row["Month of Event Date"]))].filter(Boolean);
-        const mSelect = document.getElementById('monthSelect');
-        mSelect.innerHTML = "";
-        months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
+        // Hae uniikit vuodet
+        const years = [...new Set(uploadedData.map(row => row["Year of Event Date"]))].filter(Boolean).sort((a,b) => b-a);
+        const ySelect = document.getElementById('yearSelect');
+        ySelect.innerHTML = "";
+        years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
         
-        document.getElementById('monthSelectorContainer').style.display = "block";
-        applyMonthData();
+        document.getElementById('dateSelectorContainer').style.display = "block";
+        updateMonthOptions();
     };
     reader.readAsArrayBuffer(e.target.files[0]);
 });
 
-function applyMonthData() {
+function updateMonthOptions() {
+    const selectedYear = document.getElementById('yearSelect').value;
+    // Suodata kuukaudet valitun vuoden perusteella
+    const monthsForYear = [...new Set(uploadedData
+        .filter(row => String(row["Year of Event Date"]) === selectedYear)
+        .map(row => row["Month of Event Date"])
+    )].filter(Boolean);
+
+    const mSelect = document.getElementById('monthSelect');
+    mSelect.innerHTML = "";
+    monthsForYear.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
+    
+    applyFilteredData();
+}
+
+function applyFilteredData() {
+    const targetYear = document.getElementById('yearSelect').value;
     const targetMonth = document.getElementById('monthSelect').value;
-    const row = uploadedData.find(r => r["Month of Event Date"] === targetMonth);
+    
+    const row = uploadedData.find(r => 
+        String(r["Year of Event Date"]) === targetYear && 
+        r["Month of Event Date"] === targetMonth
+    );
     
     if(row) {
         document.getElementById('totalAds').value = row["N Ads"] || 0;
         document.getElementById('cpcClicks').value = row["N Ad Views"] || 0;
         
-        // Summalogiikka liideille
         const convStart = parseFloat(row["N Conversation Start"]) || 0;
         const linkClicks = parseFloat(row["N Homepage Link Clicked"]) || 0;
         const phoneLeads = parseFloat(row["N Phone Leads"]) || 0;
@@ -189,7 +217,7 @@ function calculate() {
     };
     
     const rA = getR(PACKAGES[document.getElementById('pkgA').selectedIndex], costA);
-    const rB = getR(PACKAGES[document.getElementById('pkgB').selectedIndex], costB);
+    const rB = getRes = getR(PACKAGES[document.getElementById('pkgB').selectedIndex], costB);
 
     document.getElementById('uiRevA').textContent = Math.round(rA.rev).toLocaleString() + ' €';
     document.getElementById('uiRoiA').textContent = 'ROI: ' + Math.round(rA.roi).toLocaleString() + '%';
