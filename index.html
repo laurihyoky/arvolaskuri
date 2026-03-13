@@ -3,8 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa Arvolaskuri v17.1</title>
-  <link rel="icon" type="image/png" href="images.png">
+    <title>Tori-Kauppa Arvolaskuri v17.2</title>
+    
+    <link rel="icon" type="image/png" href="images.png">
+
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
@@ -39,7 +41,7 @@
 
 <header>
     <div class="logo-text">tori</div>
-    <h1 style="font-size: 1.4rem; margin:0; color: #1e293b;">Strateginen Laskuri</h1>
+    <h1 style="font-size: 1.4rem; margin:0; color: #1e293b;">Arvolaskuri</h1>
     <div>
         <button class="btn-load" onclick="document.getElementById('fileInput').click()">Lataa asiakkaan data</button>
         <input type="file" id="fileInput" style="display:none" accept=".xlsx, .xls, .csv">
@@ -70,12 +72,12 @@
             
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
                 <div><label>Konversio %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate(false)"></div>
-                <div><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="700" oninput="calculate(false)"></div>
+                <div><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="750" oninput="calculate(false)"></div>
             </div>
 
             <div class="switch-container">
                 <label for="showProposal" style="font-size: 14px; color: var(--brand-color); font-weight: bold; cursor: pointer;">Näytä päivitysehdotus</label>
-                <input type="checkbox" id="showProposal" checked onchange="calculate(true)" style="width: 20px; height: 20px; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="showProposal" onchange="calculate(true)" style="width: 20px; height: 20px; cursor: pointer; margin: 0;">
             </div>
 
             <div id="proposalInputs">
@@ -85,7 +87,7 @@
                 <div class="input-group" style="margin-top:15px;">
                     <label style="color: var(--brand-color);">Arvioidut liidit päivityksellä</label>
                     <input type="number" id="leadsB_manual" class="highlight-input" oninput="calculate(false)">
-                    <small style="font-size: 10px; color: #666;">* Laskettu 4.7x tähtiteholla. Muokattavissa.</small>
+                    <small style="font-size: 10px; color: #666;">* Laskettu 4.7x tähtiteholla.</small>
                 </div>
             </div>
         </aside>
@@ -149,7 +151,6 @@ function init() {
     document.getElementById('cpcPkg').selectedIndex = 3;
     syncPrice('A'); syncPrice('B');
     
-    // TÄRKEÄ: Ajaa molemmat laskurit heti käynnistyksessä
     calculate(true);
     calculateCPC();
 }
@@ -218,7 +219,7 @@ function syncPrice(type) {
     document.getElementById('price'+type).value = PACKAGES[idx].price;
     if(type === 'A') document.getElementById('cpcPkg').selectedIndex = idx;
     calculate(true);
-    calculateCPC(); // Varmistaa että CPC päivittyy hinnan mukaan
+    calculateCPC();
 }
 
 function calculate(autoUpdateLeads) {
@@ -237,7 +238,7 @@ function calculate(autoUpdateLeads) {
     const sA = Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars, n);
     const v = leadsA / (n + (M * sA));
 
-    if(autoUpdateLeads && showProp) {
+    if(autoUpdateLeads) {
         const pkgB = PACKAGES[document.getElementById('pkgB').selectedIndex];
         const sB = Math.min(pkgB.stars, n);
         const projectedB = v * (n + (M * sB));
