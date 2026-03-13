@@ -191,7 +191,7 @@ function updateTimelineCharts() {
     Plotly.newPlot('chartTimeline', [{
         x: labels, y: leadsValues, type: 'bar', marker: {color: '#f94f55'},
         text: leadsValues.map(v => Math.round(v)), textposition: 'auto', textangle: 0
-    }], { title: 'Liidien kertymä (Yhteydenotot / Verkkokauppalinkit)', margin: {t:40,b:80,l:50,r:20}, xaxis: { tickangle: -45 } }, {displayModeBar: false, responsive: true});
+    }], { title: 'Liidien kertymä (Yhteydenotot / Verkkokauppaan ohjatut asiakkaat)', margin: {t:40,b:80,l:50,r:20}, xaxis: { tickangle: -45 } }, {displayModeBar: false, responsive: true});
 
     const adsValues = uploadedData.map(r => parseFloat(r["N Ads"]) || 0);
     const viewsValues = uploadedData.map(r => parseFloat(r["N Ad Views"]) || 0);
