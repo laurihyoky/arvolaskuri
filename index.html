@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa Arvolaskuri v18.1</title>
+    <title>Tori-Kauppa Arvolaskuri v18.3</title>
     
     <link rel="icon" type="image/png" href="images.png">
 
@@ -14,36 +14,27 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: #1e293b; }
         header { background: #fff; padding: 10px 40px; text-align: center; border-bottom: 4px solid var(--brand-color); display: flex; justify-content: space-between; align-items: center; }
         .logo-text { font-weight: 900; font-size: 28px; color: var(--brand-color); letter-spacing: -1px; }
-        
         .tabs { display: flex; justify-content: center; gap: 5px; margin: 20px 0; }
         .tab-btn { padding: 10px 25px; border: none; background: #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .tab-btn.active { background: var(--tori-blue); color: white; }
-        
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 380px 1fr; gap: 30px; }
         .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; }
         h2 { font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; color: var(--tori-blue); }
-        
         .btn-load { background: var(--brand-color); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
-        
         .stat-card { border: 2px solid #f1f5f9; padding: 20px; border-radius: 16px; text-align: center; background: #fff; transition: 0.3s; }
         .val { font-size: 32px; font-weight: 800; color: var(--brand-color); margin: 10px 0; }
         .roi-tag { background: #10b981; color: white; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; }
-        
         #chartROI, #chartCPC, #chartTimeline, #chartViewsAds { width: 100%; height: 400px; }
-        
         .date-selectors { display: none; margin-bottom: 15px; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #d1e5ff; }
         .time-toggle { position: absolute; top: 20px; right: 25px; z-index: 10; background: #f1f5f9; padding: 4px; border-radius: 10px; display: flex; gap: 2px; }
         .time-toggle button { border: none; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; }
         .time-toggle button.active { background: white; color: var(--tori-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
         .switch-container { display: flex; align-items: center; justify-content: space-between; background: #fdf2f2; padding: 10px; border-radius: 10px; margin: 15px 0; border: 1px solid #fee2e2; }
         .hidden { display: none !important; }
         .highlight-input { border: 2px solid var(--brand-color) !important; background: #fff8f8; font-weight: bold; color: var(--brand-color); }
-
         .tooltip { position: relative; display: inline-block; cursor: pointer; margin-left: 4px; }
         .tooltip .info-icon { background: var(--tori-blue); color: white; border-radius: 50%; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; }
         .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #334155; color: #fff; text-align: center; border-radius: 8px; padding: 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 12px; }
@@ -194,65 +185,25 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
 
 function updateTimelineCharts() {
     if(!uploadedData.length) return;
-    
     const labels = uploadedData.map(r => r["Month of Event Date"] + " " + r["Year of Event Date"]);
-    
-    // 1. Liidien kehitys (Vain luku, vaakateksti)
-    const leadsValues = uploadedData.map(r => 
-        (parseFloat(r["N Conversation Start"]) || 0) + 
-        (parseFloat(r["N Homepage Link Clicked"]) || 0) + 
-        (parseFloat(r["N Phone Leads"]) || 0)
-    );
+    const leadsValues = uploadedData.map(r => (parseFloat(r["N Conversation Start"]) || 0) + (parseFloat(r["N Homepage Link Clicked"]) || 0) + (parseFloat(r["N Phone Leads"]) || 0));
 
     Plotly.newPlot('chartTimeline', [{
-        x: labels,
-        y: leadsValues,
-        type: 'bar',
-        marker: {color: '#f94f55'},
-        text: leadsValues.map(v => Math.round(v)),
-        textposition: 'auto',
-        textangle: 0 // Teksti vaakatasossa
-    }], {
-        title: 'Liidien kertymä (Yhteydenotot / Verkkokauppaan ohjatut asiakkat)',
-        margin: {t:40,b:80,l:50,r:20},
-        xaxis: { tickangle: -45 }
-    }, {displayModeBar: false});
+        x: labels, y: leadsValues, type: 'bar', marker: {color: '#f94f55'},
+        text: leadsValues.map(v => Math.round(v)), textposition: 'auto', textangle: 0
+    }], { title: 'Liidien kertymä (Yhteydenotot / Verkkokauppalinkit)', margin: {t:40,b:80,l:50,r:20}, xaxis: { tickangle: -45 } }, {displayModeBar: false, responsive: true});
 
-    // 2. Katselukerrat ja Ilmoitukset (Combo-kaavio)
     const adsValues = uploadedData.map(r => parseFloat(r["N Ads"]) || 0);
     const viewsValues = uploadedData.map(r => parseFloat(r["N Ad Views"]) || 0);
 
     Plotly.newPlot('chartViewsAds', [
-        {
-            x: labels,
-            y: adsValues,
-            name: 'Ilmoitusmäärä',
-            type: 'bar',
-            marker: {color: '#005eff', opacity: 0.7}
-        },
-        {
-            x: labels,
-            y: viewsValues,
-            name: 'Klikkaukset (Ad Views)',
-            type: 'scatter',
-            mode: 'lines+markers',
-            yaxis: 'y2',
-            line: {color: '#f94f55', width: 3},
-            marker: {size: 8}
-        }
+        { x: labels, y: adsValues, name: 'Ilmoitusmäärä', type: 'bar', marker: {color: '#005eff', opacity: 0.7} },
+        { x: labels, y: viewsValues, name: 'Klikkaukset (Ad Views)', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: {color: '#f94f55', width: 3}, marker: {size: 8} }
     ], {
-        title: 'Ilmoitusmäärän vaikutus näkyvyyteen',
-        margin: {t:40,b:80,l:50,r:60},
-        xaxis: { tickangle: -45 },
-        yaxis: { title: 'Ilmoitukset (kpl)' },
-        yaxis2: {
-            title: 'Klikkaukset',
-            overlaying: 'y',
-            side: 'right',
-            showgrid: false
-        },
+        title: 'Ilmoitusmäärän vaikutus näkyvyyteen', margin: {t:40,b:80,l:50,r:60}, xaxis: { tickangle: -45 },
+        yaxis: { title: 'Ilmoitukset (kpl)' }, yaxis2: { title: 'Klikkaukset', overlaying: 'y', side: 'right', showgrid: false },
         legend: { orientation: 'h', y: -0.2 }
-    }, {displayModeBar: false});
+    }, {displayModeBar: false, responsive: true});
 }
 
 function updateMonthOptions() {
@@ -290,6 +241,14 @@ function openTab(evt, tabName) {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.getElementById(tabName).classList.add("active");
     evt.currentTarget.classList.add("active");
+    
+    // TÄRKEÄ KORJAUS: Pakotetaan kaavioiden uudelleenskaalaus, kun välilehti avataan
+    if (tabName === 'timeline-tab') {
+        setTimeout(() => {
+            Plotly.Plots.resize('chartTimeline');
+            Plotly.Plots.resize('chartViewsAds');
+        }, 10);
+    }
 }
 
 function syncPrice(type) {
@@ -347,7 +306,7 @@ function calculate(autoUpdateLeads) {
     Plotly.newPlot('chartROI', [
         { x: xData, y: yCost, name: 'Kulu', type: 'bar', marker: {color: '#005eff'}, text: yCost.map(v => Math.round(v)+'€'), textposition: 'auto' },
         { x: xData, y: yRev, name: 'Tuotto', type: 'bar', marker: {color: '#f94f55'}, text: yRev.map(v => Math.round(v).toLocaleString()+'€'), textposition: 'auto' }
-    ], { barmode: 'group', title: timeMultiplier === 1 ? 'Kuukausitason potentiaali' : 'Vuositason potentiaali', margin: {t:60,b:40,l:50,r:20} }, {displayModeBar: false});
+    ], { barmode: 'group', title: timeMultiplier === 1 ? 'Kuukausitason potentiaali' : 'Vuositason potentiaali', margin: {t:60,b:40,l:50,r:20} }, {displayModeBar: false, responsive: true});
 }
 
 function calculateCPC() {
@@ -359,7 +318,7 @@ function calculateCPC() {
     if(tori > 0 && comp > 0) document.getElementById('cpcEfficiency').textContent = `Tori on ${Math.round(comp/tori)}x edullisempi.`;
     Plotly.newPlot('chartCPC', [
         { x: ['Tori CPC', 'Muu CPC'], y: [tori, comp], type: 'bar', marker: {color: ['#f94f55', '#005eff']}, text: [tori.toFixed(3)+'€', comp.toFixed(2)+'€'], textposition: 'auto' }
-    ], { title: 'CPC-vertailu (€)', yaxis: {tickformat: '.3f'}, margin: {t:40,b:40,l:50,r:20} }, {displayModeBar: false});
+    ], { title: 'CPC-vertailu (€)', yaxis: {tickformat: '.3f'}, margin: {t:40,b:40,l:50,r:20} }, {displayModeBar: false, responsive: true});
 }
 
 window.onload = init;
