@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa Arvolaskuri v17.2</title>
+    <title>Tori-Kauppa Arvolaskuri v17.3</title>
     
     <link rel="icon" type="image/png" href="images.png">
 
@@ -35,6 +35,13 @@
         .switch-container { display: flex; align-items: center; justify-content: space-between; background: #fdf2f2; padding: 10px; border-radius: 10px; margin: 15px 0; border: 1px solid #fee2e2; }
         .hidden { display: none !important; }
         .highlight-input { border: 2px solid var(--brand-color) !important; background: #fff8f8; font-weight: bold; color: var(--brand-color); }
+
+        /* Tooltip-tyylit */
+        .tooltip { position: relative; display: inline-block; cursor: pointer; margin-left: 4px; }
+        .tooltip .info-icon { background: var(--tori-blue); color: white; border-radius: 50%; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; }
+        .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #334155; color: #fff; text-align: center; border-radius: 8px; padding: 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 12px; font-weight: normal; line-height: 1.4; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .tooltip .tooltiptext::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #334155 transparent transparent transparent; }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body>
@@ -66,7 +73,16 @@
             <div class="input-group"><label>Ilmoitusmäärä (N Ads)</label><input type="number" id="totalAds" value="248" oninput="calculate(true)"></div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div><label>Nykyinen paketti</label><select id="pkgA" onchange="syncPrice('A')"></select></div>
-                <div><label>Nykyiset liidit</label><input type="number" id="leadsA" value="280" oninput="calculate(true)"></div>
+                <div>
+                    <label>
+                        Nykyiset liidit
+                        <div class="tooltip">
+                            <span class="info-icon">?</span>
+                            <span class="tooltiptext">Liidit = Yhteydenotot (viestit + puhelut) sekä Verkkokauppaan ohjatut asiakkaat.</span>
+                        </div>
+                    </label>
+                    <input type="number" id="leadsA" value="280" oninput="calculate(true)">
+                </div>
             </div>
             <div class="input-group"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate(true)"></select></div>
             
