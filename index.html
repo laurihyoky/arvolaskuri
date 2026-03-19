@@ -3,176 +3,329 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tori-Kauppa Arvolaskuri v18.3</title>
-    
-    <link rel="icon" type="image/png" href="images.png">
-
+    <title>Tori-Kauppa Arvolaskuri v19</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --brand-color: #f94f55; --tori-blue: #005eff; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: #1e293b; }
-        header { background: #fff; padding: 10px 40px; text-align: center; border-bottom: 4px solid var(--brand-color); display: flex; justify-content: space-between; align-items: center; }
-        .logo-text { font-weight: 900; font-size: 28px; color: var(--brand-color); letter-spacing: -1px; }
-        .tabs { display: flex; justify-content: center; gap: 5px; margin: 20px 0; }
-        .tab-btn { padding: 10px 25px; border: none; background: #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .tab-btn.active { background: var(--tori-blue); color: white; }
-        .tab-content { display: none; }
+        :root {
+            --brand: #f94f55;
+            --brand-light: #fff0f0;
+            --brand-mid: #ffd6d7;
+            --blue: #005eff;
+            --blue-light: #e8f0ff;
+            --bg: #f4f6fb;
+            --surface: #ffffff;
+            --surface2: #f8fafd;
+            --border: #e8ecf4;
+            --text: #0f172a;
+            --text2: #64748b;
+            --text3: #94a3b8;
+            --green: #10b981;
+            --green-light: #ecfdf5;
+            --radius: 16px;
+            --shadow: 0 2px 12px rgba(15,23,42,0.07);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        header {
+            background: var(--surface); padding: 0 40px; height: 64px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .logo-text { font-weight: 900; font-size: 26px; color: var(--brand); letter-spacing: -1.5px; }
+        .header-divider { width: 1px; height: 28px; background: var(--border); }
+        .header-title { font-size: 14px; font-weight: 600; color: var(--text2); }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 7px; padding: 8px 18px;
+            border: none; border-radius: 10px; cursor: pointer;
+            font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 13px; transition: all 0.18s;
+        }
+        .btn-primary { background: var(--brand); color: white; }
+        .btn-primary:hover { background: #e03a40; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249,79,85,0.35); }
+        .btn-outline { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
+        .btn-outline:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+
+        .tabs-wrapper { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; }
+        .tabs { display: flex; }
+        .tab-btn {
+            padding: 16px 22px; border: none; background: transparent; cursor: pointer;
+            font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; color: var(--text2);
+            border-bottom: 2.5px solid transparent; margin-bottom: -1px; transition: all 0.18s;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+        .tab-content { display: none; padding: 30px 40px; }
         .tab-content.active { display: block; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 380px 1fr; gap: 30px; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; }
-        h2 { font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; color: var(--tori-blue); }
-        .btn-load { background: var(--brand-color); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
-        .stat-card { border: 2px solid #f1f5f9; padding: 20px; border-radius: 16px; text-align: center; background: #fff; transition: 0.3s; }
-        .val { font-size: 32px; font-weight: 800; color: var(--brand-color); margin: 10px 0; }
-        .roi-tag { background: #10b981; color: white; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; }
-        #chartROI, #chartCPC, #chartTimeline, #chartViewsAds { width: 100%; height: 400px; }
-        .date-selectors { display: none; margin-bottom: 15px; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #d1e5ff; }
-        .time-toggle { position: absolute; top: 20px; right: 25px; z-index: 10; background: #f1f5f9; padding: 4px; border-radius: 10px; display: flex; gap: 2px; }
-        .time-toggle button { border: none; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; }
-        .time-toggle button.active { background: white; color: var(--tori-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .switch-container { display: flex; align-items: center; justify-content: space-between; background: #fdf2f2; padding: 10px; border-radius: 10px; margin: 15px 0; border: 1px solid #fee2e2; }
-        .hidden { display: none !important; }
-        .highlight-input { border: 2px solid var(--brand-color) !important; background: #fff8f8; font-weight: bold; color: var(--brand-color); }
-        .tooltip { position: relative; display: inline-block; cursor: pointer; margin-left: 4px; }
-        .tooltip .info-icon { background: var(--tori-blue); color: white; border-radius: 50%; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; }
-        .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #334155; color: #fff; text-align: center; border-radius: 8px; padding: 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 12px; }
+        .two-col { display: grid; grid-template-columns: 360px 1fr; gap: 24px; max-width: 1280px; margin: 0 auto; }
+        .one-col { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+        .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; box-shadow: var(--shadow); }
+        .card-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em;
+            color: var(--text3); margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+        }
+
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+        .field input, .field select {
+            width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--text);
+            background: var(--surface2); transition: all 0.15s; outline: none;
+        }
+        .field input:focus, .field select:focus { border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(0,94,255,0.08); }
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .highlight-input { border-color: var(--brand) !important; background: var(--brand-light) !important; color: var(--brand) !important; font-weight: 700 !important; }
+        .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+        .proposal-toggle {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--brand-light); border: 1.5px solid var(--brand-mid);
+            border-radius: 12px; padding: 12px 14px; margin: 16px 0;
+        }
+        .proposal-toggle label { font-size: 13px; font-weight: 700; color: var(--brand); cursor: pointer; }
+        .toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 22px; transition: 0.2s; }
+        .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+        .toggle-switch input:checked + .toggle-slider { background: var(--brand); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+        .stat-card.current::before { background: var(--blue); }
+        .stat-card.proposal::before { background: var(--brand); }
+        .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .stat-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .stat-dot.blue { background: var(--blue); }
+        .stat-dot.red { background: var(--brand); }
+        .stat-val { font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -1px; margin-bottom: 8px; }
+        .roi-badge { display: inline-flex; align-items: center; background: var(--green-light); color: var(--green); padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+
+        .chart-card { position: relative; }
+        .time-toggle {
+            position: absolute; top: 18px; right: 20px; z-index: 10;
+            background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; display: flex; gap: 2px;
+        }
+        .time-toggle button {
+            border: none; background: transparent; padding: 5px 12px; border-radius: 7px; cursor: pointer;
+            font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text2); transition: all 0.15s;
+        }
+        .time-toggle button.active { background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+        .chart-wrap { position: relative; height: 360px; }
+
+        .date-filter { display: none; background: var(--blue-light); border: 1px solid #c7d9ff; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+        .date-filter .field { margin-bottom: 0; }
+
+        .cpc-stat { text-align: center; padding: 28px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; }
+        .cpc-stat .big { font-size: 42px; font-weight: 800; color: var(--brand); letter-spacing: -2px; margin-bottom: 4px; }
+
+        .tooltip { position: relative; display: inline-block; cursor: pointer; margin-left: 4px; vertical-align: middle; }
+        .info-icon { background: var(--blue); color: white; border-radius: 50%; width: 15px; height: 15px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+        .tooltiptext { visibility: hidden; width: 220px; background: #1e293b; color: #e2e8f0; border-radius: 10px; padding: 10px 12px; position: absolute; z-index: 200; bottom: 130%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; font-size: 12px; line-height: 1.5; }
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+        .hidden { display: none !important; }
+
+        #pdfOverlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 16px; color: white; font-weight: 600; font-size: 15px; backdrop-filter: blur(4px); }
+        #pdfOverlay.show { display: flex; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+<div id="pdfOverlay"><div class="spinner"></div>Generoidaan PDF-raporttia...</div>
+
 <header>
-    <div class="logo-text">tori</div>
-    <h1 style="font-size: 1.4rem; margin:0; color: #1e293b;">Arvolaskuri</h1>
-    <div>
-        <button class="btn-load" onclick="document.getElementById('fileInput').click()">Lataa asiakkaan data</button>
-        <input type="file" id="fileInput" style="display:none" accept=".xlsx, .xls, .csv">
+    <div class="header-left">
+        <div class="logo-text">tori</div>
+        <div class="header-divider"></div>
+        <div class="header-title">Arvolaskuri</div>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-outline" onclick="exportPDF()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Vie PDF
+        </button>
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Lataa data
+        </button>
+        <input type="file" id="fileInput" style="display:none" accept=".xlsx,.xls,.csv">
     </div>
 </header>
 
-<div class="tabs">
-    <button class="tab-btn active" onclick="openTab(event, 'roi-tab')">Arvolaskuri</button>
-    <button class="tab-btn" onclick="openTab(event, 'cpc-tab')">CPC-analyysi</button>
-    <button class="tab-btn" onclick="openTab(event, 'timeline-tab')">Tilastot</button>
+<div class="tabs-wrapper">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event,'roi-tab')">Arvolaskuri</button>
+        <button class="tab-btn" onclick="openTab(event,'cpc-tab')">CPC-analyysi</button>
+        <button class="tab-btn" onclick="openTab(event,'timeline-tab')">Tilastot</button>
+    </div>
 </div>
 
+<!-- ROI TAB -->
 <div id="roi-tab" class="tab-content active">
-    <div class="container">
-        <aside class="card">
-            <h2>Nykytila</h2>
-            <div id="dateSelectorContainer" class="date-selectors">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div><label>Vuosi:</label><select id="yearSelect" onchange="updateMonthOptions()"></select></div>
-                    <div><label>Kuukausi:</label><select id="monthSelect" onchange="applyFilteredData()"></select></div>
+    <div class="two-col">
+        <aside>
+            <div class="card">
+                <div class="card-title">Nykytila & asetukset</div>
+                <div id="dateSelectorContainer" class="date-filter">
+                    <div class="field-row">
+                        <div class="field"><label>Vuosi</label><select id="yearSelect" onchange="updateMonthOptions()"></select></div>
+                        <div class="field"><label>Kuukausi</label><select id="monthSelect" onchange="applyFilteredData()"></select></div>
+                    </div>
                 </div>
-            </div>
-            <div class="input-group"><label>Ilmoitusmäärä (N Ads)</label><input type="number" id="totalAds" value="248" oninput="calculate(true)"></div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div><label>Nykyinen paketti</label><select id="pkgA" onchange="syncPrice('A')"></select></div>
-                <div><label>Nykyiset liidit <div class="tooltip"><span class="info-icon">?</span><span class="tooltiptext">Liidit = Yhteydenotot (viestit + puhelut) sekä Verkkokauppaan ohjatut asiakkaat.</span></div></label><input type="number" id="leadsA" value="280" oninput="calculate(true)"></div>
-            </div>
-            <div class="input-group"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate(true)"></select></div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                <div><label>Konversio %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate(false)"></div>
-                <div><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="750" oninput="calculate(false)"></div>
-            </div>
-            <div class="switch-container">
-                <label for="showProposal" style="font-size: 14px; color: var(--brand-color); font-weight: bold; cursor: pointer;">Näytä päivitysehdotus</label>
-                <input type="checkbox" id="showProposal" onchange="calculate(true)" style="width: 20px; height: 20px; cursor: pointer;">
-            </div>
-            <div id="proposalInputs">
-                <label>Suositeltu paketti</label><select id="pkgB" onchange="syncPrice('B')"></select>
-                <div class="input-group"><label>Uusi hinta (€)</label><select id="priceB" onchange="calculate(false)"></select></div>
-                <div class="input-group" style="margin-top:15px;">
-                    <label style="color: var(--brand-color);">Arvioidut liidit päivityksellä</label>
-                    <input type="number" id="leadsB_manual" class="highlight-input" oninput="calculate(false)">
+                <div class="field"><label>Ilmoitusmäärä (N Ads)</label><input type="number" id="totalAds" value="248" oninput="calculate(true)"></div>
+                <div class="field-row">
+                    <div class="field"><label>Nykyinen paketti</label><select id="pkgA" onchange="syncPrice('A')"></select></div>
+                    <div class="field">
+                        <label>Nykyiset liidit
+                            <div class="tooltip"><span class="info-icon">?</span><span class="tooltiptext">Liidit = Yhteydenotot (viestit + puhelut) sekä Verkkokauppaan ohjatut asiakkaat.</span></div>
+                        </label>
+                        <input type="number" id="leadsA" value="280" oninput="calculate(true)">
+                    </div>
+                </div>
+                <div class="field"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate(true)"></select></div>
+                <div class="divider"></div>
+                <div class="field-row">
+                    <div class="field"><label>Konversio %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate(false)"></div>
+                    <div class="field"><label>Keskihinta (€)</label><input type="number" id="avgPrice" value="750" oninput="calculate(false)"></div>
+                </div>
+                <div class="proposal-toggle">
+                    <label for="showProposal">Näytä päivitysehdotus</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showProposal" onchange="calculate(true)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="proposalInputs">
+                    <div class="field"><label>Suositeltu paketti</label><select id="pkgB" onchange="syncPrice('B')"></select></div>
+                    <div class="field"><label>Uusi hinta (€)</label><select id="priceB" onchange="calculate(false)"></select></div>
+                    <div class="field">
+                        <label style="color:var(--brand)">Arvioidut liidit päivityksellä</label>
+                        <input type="number" id="leadsB_manual" class="highlight-input" oninput="calculate(false)">
+                    </div>
                 </div>
             </div>
         </aside>
         <main>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;" id="statGrid">
-                <div class="stat-card" id="uiCardA"><h3>Nykyinen tuotto (<span class="time-label">kk</span>)</h3><div class="val" id="uiRevA">0 €</div><div class="roi-tag" id="uiRoiA">ROI: 0%</div></div>
-                <div class="stat-card" id="uiCardB"><h3>Ehdotettu tuotto (<span class="time-label">kk</span>)</h3><div class="val" id="uiRevB">0 €</div><div class="roi-tag" id="uiRoiB">ROI: 0%</div></div>
+            <div class="stat-grid" id="statGrid">
+                <div class="stat-card current" id="uiCardA">
+                    <div class="stat-label"><span class="stat-dot blue"></span>Nykyinen tuotto (<span class="time-label">kk</span>)</div>
+                    <div class="stat-val" id="uiRevA">0 €</div>
+                    <div class="roi-badge" id="uiRoiA">ROI: 0%</div>
+                </div>
+                <div class="stat-card proposal" id="uiCardB">
+                    <div class="stat-label"><span class="stat-dot red"></span>Ehdotettu tuotto (<span class="time-label">kk</span>)</div>
+                    <div class="stat-val" id="uiRevB">0 €</div>
+                    <div class="roi-badge" id="uiRoiB">ROI: 0%</div>
+                </div>
             </div>
-            <div class="card">
+            <div class="card chart-card">
                 <div class="time-toggle">
                     <button id="toggleMonth" class="active" onclick="setTimeframe(1)">Kuukausi</button>
                     <button id="toggleYear" onclick="setTimeframe(12)">Vuosi</button>
                 </div>
-                <div id="chartROI"></div>
+                <div class="chart-wrap"><canvas id="chartROI"></canvas></div>
             </div>
         </main>
     </div>
 </div>
 
+<!-- CPC TAB -->
 <div id="cpc-tab" class="tab-content">
-    <div class="container">
-        <aside class="card">
-            <h2>CPC-analyysi</h2>
-            <div class="input-group"><label>Katselukerrat (Klikkaukset) / kk</label><input type="number" id="cpcClicks" value="11000" oninput="calculateCPC()"></div>
-            <div class="input-group"><label>Valitse paketti</label><select id="cpcPkg" onchange="calculateCPC()"></select></div>
-            <div class="input-group"><label>Paketin hinta (€)</label><select id="cpcPrice" onchange="calculateCPC()"></select></div>
-            <hr style="border:0; border-top:2px solid #f1f5f9; margin:20px 0;">
-            <div class="input-group"><label>Vertailun CPC (Google/Meta) €</label><input type="number" id="compCPC" value="0.40" step="0.05" oninput="calculateCPC()"></div>
+    <div class="two-col">
+        <aside>
+            <div class="card">
+                <div class="card-title">CPC-asetukset</div>
+                <div class="field"><label>Katselukerrat (Klikkaukset) / kk</label><input type="number" id="cpcClicks" value="11000" oninput="calculateCPC()"></div>
+                <div class="field"><label>Valitse paketti</label><select id="cpcPkg" onchange="calculateCPC()"></select></div>
+                <div class="field"><label>Paketin hinta (€)</label><select id="cpcPrice" onchange="calculateCPC()"></select></div>
+                <div class="divider"></div>
+                <div class="field"><label>Vertailun CPC (Google/Meta) €</label><input type="number" id="compCPC" value="0.40" step="0.05" oninput="calculateCPC()"></div>
+            </div>
         </aside>
         <main>
-            <div class="stat-card"><h3>Tori-Kaupan CPC</h3><div class="val" id="uiToriCPC">0,000 €</div><p id="cpcEfficiency" style="font-weight: 600; color: #10b981; margin: 0;"></p></div>
-            <div class="card" style="margin-top:20px;"><div id="chartCPC"></div></div>
+            <div class="cpc-stat">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:8px;">Tori-Kaupan CPC</div>
+                <div class="big" id="uiToriCPC">0,000 €</div>
+                <div id="cpcEfficiency" style="font-weight:600;color:var(--green);font-size:15px;margin-top:4px;"></div>
+            </div>
+            <div class="card"><div class="chart-wrap"><canvas id="chartCPC"></canvas></div></div>
         </main>
     </div>
 </div>
 
+<!-- TIMELINE TAB -->
 <div id="timeline-tab" class="tab-content">
-    <div class="container" style="grid-template-columns: 1fr; gap: 20px;">
+    <div class="one-col">
         <div class="card">
-            <h2>Liidien kehitys</h2>
-            <div id="chartTimeline"></div>
+            <div class="card-title">Liidien kehitys</div>
+            <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
         </div>
         <div class="card">
-            <h2>Näkyvyys ja Ilmoitusmäärä</h2>
-            <div id="chartViewsAds"></div>
+            <div class="card-title">Näkyvyys ja ilmoitusmäärä</div>
+            <div class="chart-wrap"><canvas id="chartViewsAds"></canvas></div>
         </div>
     </div>
 </div>
 
 <script>
 const PACKAGES = [
-    { name: "Starter", price: 99, stars: 5 }, { name: "Standard", price: 129, stars: 10 },
-    { name: "Advanced", price: 179, stars: 20 }, { name: "Plus", price: 279, stars: 50 },
-    { name: "Premium", price: 489, stars: 100 }, { name: "Starter Feed", price: 299, stars: 50 },
-    { name: "Standard Feed", price: 599, stars: 150 }
+    { name:"Starter",       price:99,  stars:5   },
+    { name:"Standard",      price:129, stars:10  },
+    { name:"Advanced",      price:179, stars:20  },
+    { name:"Plus",          price:279, stars:50  },
+    { name:"Premium",       price:489, stars:100 },
+    { name:"Starter Feed",  price:299, stars:50  },
+    { name:"Standard Feed", price:599, stars:150 }
 ];
-const PRICE_POINTS = [99, 129, 179, 279, 299, 489, 599];
+const PRICE_POINTS = [99,129,179,279,299,489,599];
+
 let uploadedData = [];
 let timeMultiplier = 1;
+let chartROI=null, chartCPC=null, chartTimeline=null, chartViewsAds=null;
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#64748b';
 
 function init() {
-    ['pkgA', 'pkgB', 'cpcPkg'].forEach(id => {
-        PACKAGES.forEach((p, i) => document.getElementById(id).innerHTML += `<option value="${i}">${p.name} (${p.stars}*)</option>`);
+    ['pkgA','pkgB','cpcPkg'].forEach(id => {
+        PACKAGES.forEach((p,i) => document.getElementById(id).innerHTML += `<option value="${i}">${p.name} (${p.stars}★)</option>`);
     });
-    ['priceA', 'priceB', 'cpcPrice'].forEach(id => {
+    ['priceA','priceB','cpcPrice'].forEach(id => {
         PRICE_POINTS.forEach(v => document.getElementById(id).innerHTML += `<option value="${v}">${v} €</option>`);
     });
-    document.getElementById('pkgA').selectedIndex = 3; document.getElementById('pkgB').selectedIndex = 4;
-    document.getElementById('cpcPkg').selectedIndex = 3; syncPrice('A'); syncPrice('B');
+    document.getElementById('pkgA').selectedIndex = 3;
+    document.getElementById('pkgB').selectedIndex = 4;
+    document.getElementById('cpcPkg').selectedIndex = 3;
+    syncPrice('A'); syncPrice('B');
     calculate(true); calculateCPC();
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e) {
     const reader = new FileReader();
     reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
-        const rawJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        const rawJson = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
         let currentYear = "";
         uploadedData = rawJson.map(row => {
             if (row["Year of Event Date"]) currentYear = row["Year of Event Date"];
             else row["Year of Event Date"] = currentYear;
             return row;
         });
-        const years = [...new Set(uploadedData.map(row => String(row["Year of Event Date"])))].filter(y => y && y !== "").sort((a,b) => b-a);
+        const years = [...new Set(uploadedData.map(r=>String(r["Year of Event Date"])))].filter(y=>y).sort((a,b)=>b-a);
         const ySelect = document.getElementById('yearSelect');
         ySelect.innerHTML = "";
         years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
@@ -183,32 +336,99 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(e.target.files[0]);
 });
 
+// Custom plugin: draw value labels above each bar/point
+const dataLabelsPlugin = {
+    id: 'dataLabels',
+    afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        chart.data.datasets.forEach((ds, i) => {
+            const meta = chart.getDatasetMeta(i);
+            if (meta.hidden) return;
+            meta.data.forEach((el, j) => {
+                const val = ds.data[j];
+                if (val == null || val === 0) return;
+                const isLine = ds.type === 'line' || meta.type === 'line';
+                let label;
+                if (ds._cpc)        label = Number(val).toFixed(3) + ' €';
+                else if (isLine)    label = Math.round(val).toLocaleString('fi-FI');
+                else if (ds._eur)   label = Math.round(val).toLocaleString('fi-FI') + ' €';
+                else                label = Math.round(val).toLocaleString('fi-FI');
+                ctx.save();
+                ctx.font = 'bold 11px "DM Sans", sans-serif';
+                ctx.fillStyle = isLine ? '#f94f55' : '#334155';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(label, el.x, el.y - 4);
+                ctx.restore();
+            });
+        });
+    }
+};
+Chart.register(dataLabelsPlugin);
+
 function updateTimelineCharts() {
-    if(!uploadedData.length) return;
-    const labels = uploadedData.map(r => r["Month of Event Date"] + " " + r["Year of Event Date"]);
-    const leadsValues = uploadedData.map(r => (parseFloat(r["N Conversation Start"]) || 0) + (parseFloat(r["N Homepage Link Clicked"]) || 0) + (parseFloat(r["N Phone Leads"]) || 0));
+    if (!uploadedData.length) return;
+    const labels = uploadedData.map(r=>`${r["Month of Event Date"]} ${r["Year of Event Date"]}`);
+    const leadsVals = uploadedData.map(r=>
+        (parseFloat(r["N Conversation Start"])||0)+
+        (parseFloat(r["N Homepage Link Clicked"])||0)+
+        (parseFloat(r["N Phone Leads"])||0)
+    );
 
-    Plotly.newPlot('chartTimeline', [{
-        x: labels, y: leadsValues, type: 'bar', marker: {color: '#f94f55'},
-        text: leadsValues.map(v => Math.round(v)), textposition: 'auto', textangle: 0
-    }], { title: 'Liidien kertymä (Yhteydenotot / Verkkokauppaan ohjatut asiakkaat)', margin: {t:40,b:80,l:50,r:20}, xaxis: { tickangle: -45 } }, {displayModeBar: false, responsive: true});
+    if (chartTimeline) {
+        chartTimeline.data.labels = labels;
+        chartTimeline.data.datasets[0].data = leadsVals;
+        chartTimeline.update('active');
+    } else {
+        chartTimeline = new Chart(document.getElementById('chartTimeline'),{
+            type:'bar',
+            data:{ labels, datasets:[{ label:'Liidit', data:leadsVals, backgroundColor:'rgba(249,79,85,0.82)', borderRadius:6, borderSkipped:false }] },
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                animation:{ duration:600, easing:'easeInOutQuart' },
+                plugins:{ legend:{display:false} },
+                scales:{
+                    x:{ grid:{display:false}, ticks:{maxRotation:45} },
+                    y:{ grid:{color:'#f1f5f9'}, beginAtZero:true }
+                },
+                layout:{ padding:{ top:22 } }
+            }
+        });
+    }
 
-    const adsValues = uploadedData.map(r => parseFloat(r["N Ads"]) || 0);
-    const viewsValues = uploadedData.map(r => parseFloat(r["N Ad Views"]) || 0);
+    const adsVals   = uploadedData.map(r=>parseFloat(r["N Ads"])||0);
+    const viewsVals = uploadedData.map(r=>parseFloat(r["N Ad Views"])||0);
 
-    Plotly.newPlot('chartViewsAds', [
-        { x: labels, y: adsValues, name: 'Ilmoitusmäärä', type: 'bar', marker: {color: '#005eff', opacity: 0.7} },
-        { x: labels, y: viewsValues, name: 'Klikkaukset (Ad Views)', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: {color: '#f94f55', width: 3}, marker: {size: 8} }
-    ], {
-        title: 'Ilmoitusmäärän vaikutus näkyvyyteen', margin: {t:40,b:80,l:50,r:60}, xaxis: { tickangle: -45 },
-        yaxis: { title: 'Ilmoitukset (kpl)' }, yaxis2: { title: 'Klikkaukset', overlaying: 'y', side: 'right', showgrid: false },
-        legend: { orientation: 'h', y: -0.2 }
-    }, {displayModeBar: false, responsive: true});
+    if (chartViewsAds) {
+        chartViewsAds.data.labels = labels;
+        chartViewsAds.data.datasets[0].data = adsVals;
+        chartViewsAds.data.datasets[1].data = viewsVals;
+        chartViewsAds.update('active');
+    } else {
+        chartViewsAds = new Chart(document.getElementById('chartViewsAds'),{
+            type:'bar',
+            data:{ labels, datasets:[
+                { label:'Ilmoitusmäärä', data:adsVals, backgroundColor:'rgba(0,94,255,0.72)', borderRadius:6, borderSkipped:false, yAxisID:'y' },
+                { label:'Klikkaukset', data:viewsVals, type:'line', borderColor:'#f94f55', backgroundColor:'rgba(249,79,85,0.1)', borderWidth:2.5, pointBackgroundColor:'#f94f55', pointRadius:4, fill:false, tension:0.3, yAxisID:'y2' }
+            ]},
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                animation:{ duration:600, easing:'easeInOutQuart' },
+                plugins:{ legend:{position:'bottom'} },
+                scales:{
+                    x:{ grid:{display:false}, ticks:{maxRotation:45} },
+                    y:{ grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Ilmoitukset (kpl)'} },
+                    y2:{ grid:{display:false}, beginAtZero:true, position:'right', title:{display:true, text:'Klikkaukset'} }
+                },
+                layout:{ padding:{ top:22 } }
+            }
+        });
+    }
 }
 
 function updateMonthOptions() {
-    const selectedYear = document.getElementById('yearSelect').value;
-    const months = [...new Set(uploadedData.filter(row => String(row["Year of Event Date"]) === selectedYear).map(row => row["Month of Event Date"]))].filter(Boolean);
+    const year = document.getElementById('yearSelect').value;
+    const months = [...new Set(uploadedData.filter(r=>String(r["Year of Event Date"])===year).map(r=>r["Month of Event Date"]))].filter(Boolean);
     const mSelect = document.getElementById('monthSelect');
     mSelect.innerHTML = "";
     months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
@@ -216,45 +436,38 @@ function updateMonthOptions() {
 }
 
 function applyFilteredData() {
-    const targetYear = document.getElementById('yearSelect').value;
-    const targetMonth = document.getElementById('monthSelect').value;
-    const row = uploadedData.find(r => String(r["Year of Event Date"]) === targetYear && r["Month of Event Date"] === targetMonth);
-    if(row) {
-        document.getElementById('totalAds').value = row["N Ads"] || 0;
-        document.getElementById('cpcClicks').value = row["N Ad Views"] || 0;
-        const sum = (parseFloat(row["N Conversation Start"]) || 0) + (parseFloat(row["N Homepage Link Clicked"]) || 0) + (parseFloat(row["N Phone Leads"]) || 0);
+    const year  = document.getElementById('yearSelect').value;
+    const month = document.getElementById('monthSelect').value;
+    const row   = uploadedData.find(r=>String(r["Year of Event Date"])===year && r["Month of Event Date"]===month);
+    if (row) {
+        document.getElementById('totalAds').value  = row["N Ads"]||0;
+        document.getElementById('cpcClicks').value = row["N Ad Views"]||0;
+        const sum = (parseFloat(row["N Conversation Start"])||0)+(parseFloat(row["N Homepage Link Clicked"])||0)+(parseFloat(row["N Phone Leads"])||0);
         document.getElementById('leadsA').value = Math.round(sum);
         calculate(true); calculateCPC();
     }
 }
 
-function setTimeframe(multiplier) {
-    timeMultiplier = multiplier;
-    document.getElementById('toggleMonth').classList.toggle('active', multiplier === 1);
-    document.getElementById('toggleYear').classList.toggle('active', multiplier === 12);
-    document.querySelectorAll('.time-label').forEach(el => el.textContent = multiplier === 1 ? 'kk' : 'vuosi');
+function setTimeframe(m) {
+    timeMultiplier = m;
+    document.getElementById('toggleMonth').classList.toggle('active', m===1);
+    document.getElementById('toggleYear').classList.toggle('active',  m===12);
+    document.querySelectorAll('.time-label').forEach(el=>el.textContent=m===1?'kk':'vuosi');
     calculate(false);
 }
 
 function openTab(evt, tabName) {
-    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.classList.add("active");
-    
-    // TÄRKEÄ KORJAUS: Pakotetaan kaavioiden uudelleenskaalaus, kun välilehti avataan
-    if (tabName === 'timeline-tab') {
-        setTimeout(() => {
-            Plotly.Plots.resize('chartTimeline');
-            Plotly.Plots.resize('chartViewsAds');
-        }, 10);
-    }
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    evt.currentTarget.classList.add('active');
+    if (tabName==='timeline-tab') setTimeout(()=>{ chartTimeline?.resize(); chartViewsAds?.resize(); },10);
 }
 
 function syncPrice(type) {
     const idx = document.getElementById('pkg'+type).selectedIndex;
     document.getElementById('price'+type).value = PACKAGES[idx].price;
-    if(type === 'A') document.getElementById('cpcPkg').selectedIndex = idx;
+    if (type==='A') document.getElementById('cpcPkg').selectedIndex = idx;
     calculate(true); calculateCPC();
 }
 
@@ -262,63 +475,214 @@ function calculate(autoUpdateLeads) {
     const showProp = document.getElementById('showProposal').checked;
     document.getElementById('proposalInputs').classList.toggle('hidden', !showProp);
     document.getElementById('uiCardB').classList.toggle('hidden', !showProp);
-    document.getElementById('statGrid').style.gridTemplateColumns = showProp ? "1fr 1fr" : "1fr";
+    document.getElementById('statGrid').style.gridTemplateColumns = showProp?'1fr 1fr':'1fr';
 
-    const n = parseFloat(document.getElementById('totalAds').value) || 1;
-    const leadsA = parseFloat(document.getElementById('leadsA').value) || 0;
-    const closing = (parseFloat(document.getElementById('closing').value) || 0) / 100;
-    const avg = parseFloat(document.getElementById('avgPrice').value) || 0;
-    const costA = parseFloat(document.getElementById('priceA').value) * timeMultiplier;
-    
-    const M = 3.7;
-    const sA = Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars, n);
-    const v = leadsA / (n + (M * sA));
+    const n       = parseFloat(document.getElementById('totalAds').value)||1;
+    const leadsA  = parseFloat(document.getElementById('leadsA').value)||0;
+    const closing = (parseFloat(document.getElementById('closing').value)||0)/100;
+    const avg     = parseFloat(document.getElementById('avgPrice').value)||0;
+    const costA   = parseFloat(document.getElementById('priceA').value)*timeMultiplier;
+    const M=3.7, sA=Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars,n);
+    const v = leadsA/(n+M*sA);
 
-    if(autoUpdateLeads) {
-        const pkgB = PACKAGES[document.getElementById('pkgB').selectedIndex];
-        const sB = Math.min(pkgB.stars, n);
-        const projectedB = v * (n + (M * sB));
-        document.getElementById('leadsB_manual').value = Math.round(projectedB);
+    if (autoUpdateLeads) {
+        const pkgB=PACKAGES[document.getElementById('pkgB').selectedIndex];
+        const sB=Math.min(pkgB.stars,n);
+        document.getElementById('leadsB_manual').value=Math.round(v*(n+M*sB));
     }
 
-    const leadsB_final = parseFloat(document.getElementById('leadsB_manual').value) || 0;
-    const revA = leadsA * closing * avg * timeMultiplier;
-    const roiA = costA > 0 ? ((revA - costA) / costA) * 100 : 0;
+    const leadsB=parseFloat(document.getElementById('leadsB_manual').value)||0;
+    const revA=leadsA*closing*avg*timeMultiplier;
+    const roiA=costA>0?((revA-costA)/costA)*100:0;
+    document.getElementById('uiRevA').textContent=Math.round(revA).toLocaleString('fi-FI')+' €';
+    document.getElementById('uiRoiA').textContent='ROI: '+Math.round(roiA).toLocaleString('fi-FI')+'%';
 
-    document.getElementById('uiRevA').textContent = Math.round(revA).toLocaleString() + ' €';
-    document.getElementById('uiRoiA').textContent = 'ROI: ' + Math.round(roiA).toLocaleString() + '%';
-
-    let xData = ['Nykyinen'];
-    let yCost = [costA];
-    let yRev = [revA];
-
-    if(showProp) {
-        const costB = parseFloat(document.getElementById('priceB').value) * timeMultiplier;
-        const revB = leadsB_final * closing * avg * timeMultiplier;
-        const roiB = costB > 0 ? ((revB - costB) / costB) * 100 : 0;
-        document.getElementById('uiRevB').textContent = Math.round(revB).toLocaleString() + ' €';
-        document.getElementById('uiRoiB').textContent = 'ROI: ' + Math.round(roiB).toLocaleString() + '%';
-        xData.push('Ehdotus');
-        yCost.push(costB);
-        yRev.push(revB);
+    const labels=['Nykyinen'], costData=[costA], revData=[revA];
+    if (showProp) {
+        const costB=parseFloat(document.getElementById('priceB').value)*timeMultiplier;
+        const revB=leadsB*closing*avg*timeMultiplier;
+        const roiB=costB>0?((revB-costB)/costB)*100:0;
+        document.getElementById('uiRevB').textContent=Math.round(revB).toLocaleString('fi-FI')+' €';
+        document.getElementById('uiRoiB').textContent='ROI: '+Math.round(roiB).toLocaleString('fi-FI')+'%';
+        labels.push('Ehdotus'); costData.push(costB); revData.push(revB);
     }
 
-    Plotly.newPlot('chartROI', [
-        { x: xData, y: yCost, name: 'Kulu', type: 'bar', marker: {color: '#005eff'}, text: yCost.map(v => Math.round(v)+'€'), textposition: 'auto' },
-        { x: xData, y: yRev, name: 'Tuotto', type: 'bar', marker: {color: '#f94f55'}, text: yRev.map(v => Math.round(v).toLocaleString()+'€'), textposition: 'auto' }
-    ], { barmode: 'group', title: timeMultiplier === 1 ? 'Kuukausitason potentiaali' : 'Vuositason potentiaali', margin: {t:60,b:40,l:50,r:20} }, {displayModeBar: false, responsive: true});
+    const roiTitle = timeMultiplier===1 ? 'Kuukausitason potentiaali' : 'Vuositason potentiaali';
+    if (chartROI) {
+        chartROI.data.labels = labels;
+        chartROI.data.datasets[0].data = costData;
+        chartROI.data.datasets[1].data = revData;
+        chartROI.options.plugins.title.text = roiTitle;
+        chartROI.update('active');
+    } else {
+        chartROI = new Chart(document.getElementById('chartROI'),{
+            type:'bar',
+            data:{ labels, datasets:[
+                { label:'Kulu (€)', data:costData, backgroundColor:'rgba(0,94,255,0.82)', borderRadius:8, borderSkipped:false, _eur:true },
+                { label:'Tuotto (€)', data:revData, backgroundColor:'rgba(249,79,85,0.82)', borderRadius:8, borderSkipped:false, _eur:true }
+            ]},
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                animation:{ duration:500, easing:'easeInOutQuart' },
+                layout:{ padding:{ top:26 } },
+                plugins:{
+                    legend:{ position:'bottom' },
+                    title:{ display:true, text:roiTitle, font:{size:14,weight:'700'}, color:'#0f172a', padding:{bottom:16} },
+                    tooltip:{ callbacks:{ label:ctx=>`${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('fi-FI')} €` }}
+                },
+                scales:{
+                    x:{ grid:{display:false} },
+                    y:{ grid:{color:'#f1f5f9'}, beginAtZero:true, ticks:{ callback:v=>v.toLocaleString('fi-FI')+' €' }}
+                }
+            }
+        });
+    }
 }
 
 function calculateCPC() {
-    const clicks = parseFloat(document.getElementById('cpcClicks').value) || 1;
-    const price = parseFloat(document.getElementById('cpcPrice').value) || 0;
-    const comp = parseFloat(document.getElementById('compCPC').value) || 0;
-    const tori = price / clicks;
-    document.getElementById('uiToriCPC').textContent = tori.toFixed(3) + ' €';
-    if(tori > 0 && comp > 0) document.getElementById('cpcEfficiency').textContent = `Tori on ${Math.round(comp/tori)}x edullisempi.`;
-    Plotly.newPlot('chartCPC', [
-        { x: ['Tori CPC', 'Muu CPC'], y: [tori, comp], type: 'bar', marker: {color: ['#f94f55', '#005eff']}, text: [tori.toFixed(3)+'€', comp.toFixed(2)+'€'], textposition: 'auto' }
-    ], { title: 'CPC-vertailu (€)', yaxis: {tickformat: '.3f'}, margin: {t:40,b:40,l:50,r:20} }, {displayModeBar: false, responsive: true});
+    const clicks=parseFloat(document.getElementById('cpcClicks').value)||1;
+    const price =parseFloat(document.getElementById('cpcPrice').value)||0;
+    const comp  =parseFloat(document.getElementById('compCPC').value)||0;
+    const tori  =price/clicks;
+    document.getElementById('uiToriCPC').textContent=tori.toFixed(3)+' €';
+    document.getElementById('cpcEfficiency').textContent=
+        tori>0&&comp>0?`Tori on ${Math.round(comp/tori)}× edullisempi kuin muu media`:'';
+
+    if (chartCPC) {
+        chartCPC.data.datasets[0].data = [tori, comp];
+        chartCPC.update('active');
+    } else {
+        chartCPC = new Chart(document.getElementById('chartCPC'),{
+            type:'bar',
+            data:{
+                labels:['Tori CPC','Muu CPC'],
+                datasets:[{ data:[tori,comp], backgroundColor:['rgba(249,79,85,0.85)','rgba(0,94,255,0.80)'], borderRadius:8, borderSkipped:false, _cpc:true }]
+            },
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                animation:{ duration:500, easing:'easeInOutQuart' },
+                layout:{ padding:{ top:26 } },
+                plugins:{
+                    legend:{display:false},
+                    title:{ display:true, text:'CPC-vertailu (€)', font:{size:14,weight:'700'}, color:'#0f172a', padding:{bottom:16} },
+                    tooltip:{ callbacks:{ label:ctx=>ctx.parsed.y.toFixed(3)+' €' }}
+                },
+                scales:{
+                    x:{ grid:{display:false} },
+                    y:{ grid:{color:'#f1f5f9'}, beginAtZero:true, ticks:{ callback:v=>v.toFixed(3)+' €' }}
+                }
+            }
+        });
+    }
+}
+
+// ─── PDF EXPORT ───────────────────────────────────────────────────────────────
+async function exportPDF() {
+    document.getElementById('pdfOverlay').classList.add('show');
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+        const pageW=210,pageH=297,margin=15,contentW=180;
+        const RED=[249,79,85],BLUE=[0,94,255],DARK=[15,23,42],GRAY=[100,116,139],LIGHT=[248,250,252],BORDER=[232,236,244];
+
+        const g=id=>document.getElementById(id);
+        const totalAds =g('totalAds').value||'-';
+        const leadsA   =g('leadsA').value||'-';
+        const priceA   =g('priceA').value||'-';
+        const pkgAName =PACKAGES[g('pkgA').selectedIndex].name;
+        const closing  =g('closing').value||'-';
+        const avgPrice =g('avgPrice').value||'-';
+        const revA     =g('uiRevA').textContent;
+        const roiA     =g('uiRoiA').textContent;
+        const showProp =g('showProposal').checked;
+        const pkgBName =PACKAGES[g('pkgB').selectedIndex].name;
+        const priceB   =g('priceB').value||'-';
+        const leadsB   =g('leadsB_manual').value||'-';
+        const revB     =g('uiRevB').textContent;
+        const roiB     =g('uiRoiB').textContent;
+        const cpcClicks=g('cpcClicks').value||'-';
+        const toriCPC  =g('uiToriCPC').textContent;
+        const cpcEff   =g('cpcEfficiency').textContent;
+        const today    =new Date().toLocaleDateString('fi-FI');
+        const timeframe=timeMultiplier===1?'Kuukausi':'Vuosi';
+
+        // Header
+        pdf.setFillColor(...RED); pdf.rect(0,0,pageW,42,'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(28); pdf.setTextColor(255,255,255);
+        pdf.text('tori',margin,22);
+        pdf.setFontSize(13); pdf.setFont('helvetica','normal');
+        pdf.text('Arvolaskuri — Raportti',margin+22,22);
+        pdf.setFontSize(10); pdf.setTextColor(255,200,200);
+        pdf.text(today,pageW-margin,22,{align:'right'});
+        pdf.setFontSize(9); pdf.setTextColor(255,180,180);
+        pdf.text(`Aikaväli: ${timeframe}`,margin,34);
+
+        let y=54;
+        const sec=t=>{
+            pdf.setFillColor(...LIGHT); pdf.roundedRect(margin,y,contentW,8,2,2,'F');
+            pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(...GRAY);
+            pdf.text(t.toUpperCase(),margin+5,y+5.5); y+=13;
+        };
+        const row=(label,value,hl=false)=>{
+            if(hl){pdf.setFillColor(255,240,240);pdf.rect(margin,y-4,contentW,9,'F');}
+            pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.setTextColor(...GRAY);
+            pdf.text(label,margin+4,y);
+            pdf.setFont('helvetica','bold');pdf.setTextColor(...(hl?RED:DARK));
+            pdf.text(String(value),pageW-margin-4,y,{align:'right'});
+            pdf.setDrawColor(...BORDER);pdf.setLineWidth(0.2);pdf.line(margin,y+2.5,pageW-margin,y+2.5);
+            y+=9;
+        };
+        const twoStat=(lLbl,lVal,lCol,rLbl,rVal,rCol)=>{
+            const hw=(contentW-8)/2;
+            [[margin,lLbl,lVal,lCol],[margin+hw+8,rLbl,rVal,rCol]].forEach(([x,lbl,val,col])=>{
+                pdf.setFillColor(255,255,255);pdf.setDrawColor(...BORDER);pdf.setLineWidth(0.4);
+                pdf.roundedRect(x,y,hw,26,3,3,'FD');
+                pdf.setFillColor(...col);pdf.rect(x,y,hw,2,'F');
+                pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(...GRAY);
+                pdf.text(lbl,x+hw/2,y+9,{align:'center'});
+                pdf.setFont('helvetica','bold');pdf.setFontSize(13);pdf.setTextColor(...col);
+                pdf.text(String(val),x+hw/2,y+20,{align:'center'});
+            });
+            y+=34;
+        };
+
+        sec('Nykytila');
+        row('Ilmoitusmäärä (N Ads)',totalAds+' kpl');
+        row('Nykyinen paketti',pkgAName);
+        row('Nykyinen hinta',priceA+' €');
+        row('Nykyiset liidit',leadsA+' kpl');
+        row('Konversio',closing+' %');
+        row('Kaupan keskihinta',avgPrice+' €');
+        y+=4;
+        twoStat('Nykyinen tuotto',revA,BLUE,'ROI nyt',roiA,RED);
+
+        if (showProp) {
+            sec('Päivitysehdotus');
+            row('Suositeltu paketti',pkgBName);
+            row('Uusi hinta',priceB+' €');
+            row('Arvioidut liidit',leadsB+' kpl');
+            y+=4;
+            twoStat('Ehdotettu tuotto',revB,RED,'ROI ehdotuksella',roiB,[16,185,129]);
+        }
+
+        sec('CPC-analyysi');
+        row('Katselukerrat / kk',Number(cpcClicks).toLocaleString('fi-FI')+' kpl');
+        row('Tori CPC',toriCPC);
+        if(cpcEff) row('Tehokkuus',cpcEff,true);
+
+        // Footer
+        pdf.setFillColor(...DARK); pdf.rect(0,pageH-14,pageW,14,'F');
+        pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(150,160,175);
+        pdf.text('Tori-Kauppa Arvolaskuri',margin,pageH-5);
+        pdf.text('Luottamuksellinen',pageW/2,pageH-5,{align:'center'});
+        pdf.text(today,pageW-margin,pageH-5,{align:'right'});
+
+        pdf.save(`tori-arvolaskuri-${today.replace(/\./g,'-')}.pdf`);
+    } catch(err) {
+        console.error(err); alert('PDF-vienti epäonnistui.');
+    } finally {
+        document.getElementById('pdfOverlay').classList.remove('show');
+    }
 }
 
 window.onload = init;
