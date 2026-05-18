@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --brand: #f94f55;
@@ -170,14 +171,102 @@
         .period-buttons button.active { background: var(--brand); color: white; box-shadow: 0 1px 4px rgba(249,79,85,0.3); }
         .period-range-text { font-size: 13px; font-weight: 600; color: var(--text2); }
         .period-range-text strong { color: var(--text); font-weight: 700; }
+        .period-custom { display: none; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+        .period-custom.is-visible { display: inline-flex; }
+        .period-custom select {
+            font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+            border: 1px solid var(--border); background: white; color: var(--text);
+            border-radius: 7px; padding: 5px 8px; cursor: pointer;
+        }
+        .period-custom select:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
 
         /* KPI row for Yhteenveto-view */
         .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-        .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
-        .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 6px; }
-        .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.8px; }
-        .kpi-sub { font-size: 12px; color: var(--text2); margin-top: 2px; font-weight: 500; }
+        .kpi-card {
+            position: relative; background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 18px 20px 16px 22px; box-shadow: var(--shadow);
+            overflow: hidden; transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        /* Kortit joissa on info-pylpyrä eivät saa leikata tooltipia */
+        .kpi-card:has(.tooltip) { overflow: visible; }
+        .kpi-card:has(.tooltip)::before { border-top-left-radius: var(--radius); border-bottom-left-radius: var(--radius); }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(15,23,42,0.08); }
+        .kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kpi-color, var(--brand)); }
+        .kpi-card.kpi-color-brand  { --kpi-color: #f94f55; }
+        .kpi-card.kpi-color-blue   { --kpi-color: #005eff; }
+        .kpi-card.kpi-color-green  { --kpi-color: #10b981; }
+        .kpi-card.kpi-color-orange { --kpi-color: #f59e0b; }
+        .kpi-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+        .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
+        .kpi-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; line-height: 1; }
+        .kpi-trend.up   { background: #ecfdf5; color: #10b981; }
+        .kpi-trend.down { background: #fef2f2; color: #ef4444; }
+        .kpi-trend.flat { background: #f1f5f9; color: #64748b; }
+        .kpi-trend.muted { background: transparent; color: var(--text3); padding: 0; }
+        body.hide-trends .kpi-trend.up,
+        body.hide-trends .kpi-trend.down,
+        body.hide-trends .kpi-trend.flat { display: none; }
+
+        .insights-row.is-collapsed { display: none; }
+        .insights-reopen { display: none; margin-bottom: 16px; }
+        .insights-reopen.is-visible { display: block; }
+        .insights-reopen button {
+            background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
+            padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .insights-reopen button:hover { background: var(--surface); border-color: #cbd5e1; color: var(--text); }
+        .donut-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .donut-card-head .card-title { margin: 0; }
+        .insights-collapse-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text3);
+            width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 16px; line-height: 1; padding: 0; font-weight: 600;
+        }
+        .insights-collapse-btn:hover { background: var(--surface2); color: var(--text); border-color: #cbd5e1; }
+        .display-toggle {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; color: var(--text2); cursor: pointer; user-select: none;
+            margin-left: 8px;
+        }
+        .display-toggle input { margin: 0; cursor: pointer; }
+        .kpi-body { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+        .kpi-body-left { min-width: 0; flex: 1; }
+        .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.8px; line-height: 1.05; }
+        .kpi-sub { font-size: 12px; color: var(--text2); margin-top: 4px; font-weight: 500; }
         @media (max-width: 800px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+        /* Insights & channel donut */
+        .insights-row { display: grid; grid-template-columns: minmax(0, 320px) 1fr; gap: 16px; margin-bottom: 20px; }
+        @media (max-width: 900px) { .insights-row { grid-template-columns: 1fr; } }
+        .donut-card { display: flex; flex-direction: column; }
+        .donut-wrap { position: relative; height: 220px; }
+        /* top/left asetetaan JS:llä (donutCenterPositioner-plugin) jotta teksti
+           kohdistuu varsinaiseen donitsin keskipisteeseen eikä koko containeriin
+           (legend alhaalla siirtää donitsin ylös). */
+        .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+        .donut-center-value { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.6px; line-height: 1; }
+        .donut-center-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-top: 4px; }
+        .insights-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (max-width: 600px) { .insights-list { grid-template-columns: 1fr; } }
+        .insight-item {
+            position: relative; padding: 14px 16px 14px 46px;
+            background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+        }
+        .insight-icon {
+            position: absolute; left: 14px; top: 14px; width: 24px; height: 24px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--insight-color, var(--brand)); color: white;
+            border-radius: 8px; font-size: 12px; font-weight: 800;
+        }
+        .insight-item.color-brand  { --insight-color: #f94f55; }
+        .insight-item.color-blue   { --insight-color: #005eff; }
+        .insight-item.color-green  { --insight-color: #10b981; }
+        .insight-item.color-orange { --insight-color: #f59e0b; }
+        .insight-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 3px; }
+        .insight-value { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; line-height: 1.25; }
+        .insight-sub { font-size: 12px; color: var(--text2); margin-top: 2px; font-weight: 500; }
 
         /* Small multiples grid for Vertailu-view */
         .mini-grid { display: grid; gap: 16px; }
@@ -231,6 +320,30 @@
 
         #pdfOverlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 16px; color: white; font-weight: 600; font-size: 15px; backdrop-filter: blur(4px); }
         #pdfOverlay.show { display: flex; }
+
+        /* PDF-vienti modaali */
+        #pdfModal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9998; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 20px; }
+        #pdfModal.show { display: flex; }
+        .pdf-modal-card { background: var(--surface); border-radius: var(--radius); box-shadow: 0 20px 60px rgba(15,23,42,0.25); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+        .pdf-modal-header { padding: 22px 24px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .pdf-modal-title { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+        .pdf-modal-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+        .pdf-modal-close { background: transparent; border: none; cursor: pointer; color: var(--text3); padding: 4px; border-radius: 8px; transition: all 0.15s; display: flex; }
+        .pdf-modal-close:hover { background: var(--surface2); color: var(--text); }
+        .pdf-modal-body { padding: 20px 24px; }
+        .pdf-modal-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text3); margin-bottom: 10px; }
+        .pdf-check { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; background: var(--surface); }
+        .pdf-check:hover { border-color: var(--brand-mid); background: var(--brand-light); }
+        .pdf-check input { margin-top: 2px; width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; flex-shrink: 0; }
+        .pdf-check.disabled { opacity: 0.5; cursor: not-allowed; background: var(--surface2); }
+        .pdf-check.disabled:hover { border-color: var(--border); background: var(--surface2); }
+        .pdf-check-label { font-size: 14px; font-weight: 600; color: var(--text); }
+        .pdf-check-desc { font-size: 12px; color: var(--text2); margin-top: 2px; font-weight: 500; }
+        .pdf-modal-divider { height: 1px; background: var(--border); margin: 18px 0 14px; }
+        .pdf-modal-store-field { margin-bottom: 14px; }
+        .pdf-modal-store-field label { display: block; font-size: 12px; font-weight: 700; color: var(--blue); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.06em; }
+        .pdf-modal-store-field select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--text); background: white; outline: none; }
+        .pdf-modal-footer { padding: 14px 24px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
         .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -239,6 +352,69 @@
 
 <div id="pdfOverlay"><div class="spinner"></div>Generoidaan PDF-raporttia...</div>
 
+<!-- PDF-VIENTI MODAALI -->
+<div id="pdfModal" role="dialog" aria-modal="true" aria-labelledby="pdfModalTitle">
+    <div class="pdf-modal-card">
+        <div class="pdf-modal-header">
+            <div>
+                <div class="pdf-modal-title" id="pdfModalTitle">Vie PDF-raportti</div>
+                <div class="pdf-modal-sub">Valitse mitä osioita raporttiin sisällytetään</div>
+            </div>
+            <button class="pdf-modal-close" onclick="closePdfModal()" aria-label="Sulje">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="pdf-modal-body">
+            <div class="pdf-modal-section-title">Sisältö</div>
+            <label class="pdf-check">
+                <input type="checkbox" id="pdfOptCurrent" checked>
+                <div>
+                    <div class="pdf-check-label">Nykytila &amp; ROI</div>
+                    <div class="pdf-check-desc">Nykyiset asetukset, tuotto ja ROI</div>
+                </div>
+            </label>
+            <label class="pdf-check" id="pdfOptProposalWrap">
+                <input type="checkbox" id="pdfOptProposal">
+                <div>
+                    <div class="pdf-check-label">Päivitysehdotus</div>
+                    <div class="pdf-check-desc">Suositeltu paketti ja sen ROI</div>
+                </div>
+            </label>
+            <label class="pdf-check">
+                <input type="checkbox" id="pdfOptCpc" checked>
+                <div>
+                    <div class="pdf-check-label">CPC-analyysi</div>
+                    <div class="pdf-check-desc">Tori-Kaupan CPC ja vertailu</div>
+                </div>
+            </label>
+            <label class="pdf-check" id="pdfOptStatsWrap">
+                <input type="checkbox" id="pdfOptStats">
+                <div>
+                    <div class="pdf-check-label">Tilastot-yhteenveto</div>
+                    <div class="pdf-check-desc">KPI-luvut valitulta aikajaksolta (vaatii ladatun datan)</div>
+                </div>
+            </label>
+
+            <div class="pdf-modal-divider"></div>
+            <div class="pdf-modal-section-title">Lisävalinnat</div>
+            <label class="pdf-check">
+                <input type="checkbox" id="pdfOptTrend">
+                <div>
+                    <div class="pdf-check-label">Trendi-indikaattorit</div>
+                    <div class="pdf-check-desc">Näytä KPI-lukujen muutos (alkujakso vs. loppujakso) Tilastot-osiossa</div>
+                </div>
+            </label>
+        </div>
+        <div class="pdf-modal-footer">
+            <button class="btn btn-outline" onclick="closePdfModal()">Peruuta</button>
+            <button class="btn btn-primary" onclick="runPdfExport()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Luo PDF
+            </button>
+        </div>
+    </div>
+</div>
+
 <header>
     <div class="header-left">
         <div class="logo-text">tori</div>
@@ -246,7 +422,7 @@
         <div class="header-title">Arvolaskuri</div>
     </div>
     <div class="header-actions">
-        <button class="btn btn-outline" onclick="exportPDF()">
+        <button class="btn btn-outline" onclick="openPdfModal()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Vie PDF
         </button>
@@ -372,8 +548,6 @@
         </main>
     </div>
 </div>
-
-<!-- TIMELINE TAB -->
 <div id="timeline-tab" class="tab-content">
     <div class="one-col">
         <div class="store-filter-card" id="storeFilterCard">
@@ -412,7 +586,17 @@
                     <button data-months="6"  onclick="setPeriod(6)">6 kk</button>
                     <button data-months="12" onclick="setPeriod(12)">12 kk</button>
                     <button data-months="0"  class="active" onclick="setPeriod(0)">Kaikki</button>
+                    <button data-months="-1" onclick="setPeriod(-1)">Mukautettu</button>
                 </div>
+                <div class="period-custom" id="periodCustom">
+                    <select id="periodCustomStart" onchange="onCustomRangeChange()" aria-label="Alkukuukausi"></select>
+                    <span>–</span>
+                    <select id="periodCustomEnd" onchange="onCustomRangeChange()" aria-label="Loppukuukausi"></select>
+                </div>
+                <label class="display-toggle" title="Näytä prosenttimuutos verrattuna edelliseen yhtä pitkään jaksoon">
+                    <input type="checkbox" id="showTrendsToggle" checked onchange="onToggleTrends(this.checked)">
+                    Näytä muutos %
+                </label>
             </div>
             <div class="period-range-text" id="periodRangeText">–</div>
         </div>
@@ -420,27 +604,85 @@
         <!-- YHTEENVETO-NÄKYMÄ -->
         <div id="summaryView">
             <div class="kpi-row" id="kpiRow">
-                <div class="kpi-card">
-                    <div class="kpi-label">Kaupat</div>
-                    <div class="kpi-value" id="kpiStores">0</div>
-                    <div class="kpi-sub" id="kpiStoresSub">valittuna</div>
+                <div class="kpi-card kpi-color-orange">
+                    <div class="kpi-head">
+                        <span class="kpi-label">Kaupat</span>
+                        <span class="kpi-trend muted" id="kpiStoresTrend">valittuna</span>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-body-left">
+                            <div class="kpi-value" id="kpiStores">0</div>
+                            <div class="kpi-sub" id="kpiStoresSub">valittuna</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Liidit yhteensä</div>
-                    <div class="kpi-value" id="kpiLeads">0</div>
-                    <div class="kpi-sub" id="kpiLeadsSub">valitulta ajalta</div>
+                <div class="kpi-card kpi-color-brand">
+                    <div class="kpi-head">
+                        <span class="kpi-label">Liidit yhteensä<span class="tooltip"><span class="info-icon">?</span><span class="tooltiptext">Liidit = Yhteydenotot (viestit + puhelut) sekä Verkkokauppaan ohjatut asiakkaat.</span></span></span>
+                        <span class="kpi-trend flat" id="kpiLeadsTrend">–</span>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-body-left">
+                            <div class="kpi-value" id="kpiLeads">0</div>
+                            <div class="kpi-sub" id="kpiLeadsSub">valitulta ajalta</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Klikkaukset yhteensä</div>
-                    <div class="kpi-value" id="kpiViews">0</div>
-                    <div class="kpi-sub" id="kpiViewsSub">katselukerrat</div>
+                <div class="kpi-card kpi-color-blue">
+                    <div class="kpi-head">
+                        <span class="kpi-label">Klikkaukset yhteensä</span>
+                        <span class="kpi-trend flat" id="kpiViewsTrend">–</span>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-body-left">
+                            <div class="kpi-value" id="kpiViews">0</div>
+                            <div class="kpi-sub" id="kpiViewsSub">katselukerrat</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Ilmoituksia keskim.</div>
-                    <div class="kpi-value" id="kpiAds">0</div>
-                    <div class="kpi-sub" id="kpiAdsSub">per kuukausi</div>
+                <div class="kpi-card kpi-color-green">
+                    <div class="kpi-head">
+                        <span class="kpi-label">Ilmoituksia keskim.</span>
+                        <span class="kpi-trend flat" id="kpiAdsTrend">–</span>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-body-left">
+                            <div class="kpi-value" id="kpiAds">0</div>
+                            <div class="kpi-sub" id="kpiAdsSub">per kuukausi</div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Insights + Donut -->
+            <div class="insights-reopen" id="insightsReopen">
+                <button type="button" onclick="toggleInsights()" title="Näytä liidikanavat ja havainnot">
+                    <span style="font-size:14px;line-height:1;">+</span> Näytä liidikanavat ja havainnot
+                </button>
+            </div>
+            <div class="insights-row" id="insightsRow">
+                <div class="card donut-card">
+                    <div class="donut-card-head">
+                        <div class="card-title">Liidikanavat</div>
+                        <button type="button" class="insights-collapse-btn" onclick="toggleInsights()" title="Piilota liidikanavat ja havainnot" aria-label="Piilota osio">−</button>
+                    </div>
+                    <div class="donut-wrap">
+                        <canvas id="chartChannelDonut"></canvas>
+                        <div class="donut-center" id="donutCenter">
+                            <div class="donut-center-value" id="donutCenterValue">0</div>
+                            <div class="donut-center-label">liidiä yht.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="donut-card-head" style="transform: translateY(-4px);">
+                        <div class="card-title">Havainnot</div>
+                        <button type="button" class="insights-collapse-btn" onclick="toggleInsights()" title="Piilota liidikanavat ja havainnot" aria-label="Piilota osio">−</button>
+                    </div>
+                    <div class="insights-list" id="insightsList"></div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-title">Liidien kehitys</div>
                 <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
@@ -477,16 +719,20 @@ const PACKAGES = [
 ];
 const PRICE_POINTS = [99,129,179,279,299,489,599];
 
+
 let uploadedData = [];
 let timeMultiplier = 1;
 let chartROI=null, chartCPC=null, chartTimeline=null, chartViewsAds=null;
+let chartChannelDonut=null;
 
 // Useamman kaupan tilanhallinta
 let availableStores = []; // [{id, name}]
 let selectedStoreIds = new Set();
 let timelineView = 'summary'; // 'summary' | 'compare'
 let miniCharts = []; // small multiples -instanssit
-let periodMonths = 0; // 0 = kaikki, muutoin viimeiset N kuukautta datan loppupäästä
+let periodMonths = 0; // 0 = kaikki, -1 = mukautettu, muutoin viimeiset N kuukautta datan loppupäästä
+let customStartKey = null; // "kuukausi|vuosi"
+let customEndKey   = null;
 let activeStoreId = null; // valittu kauppa Arvolaskuri- ja CPC-välilehdillä ('__all__' = kaikki yhdistettynä)
 
 // Värit eri kaupoille (saavutettavia ja toisistaan erottuvia)
@@ -575,6 +821,23 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
         document.getElementById('periodBar').style.display = 'flex';
         updateMonthOptions();
         updateCpcMonthOptions();
+        // Jos mukautettu jakso on jo aktiivinen, päivitä valitsinten sisältö
+        // uuden datan kuukausilla ja vahvista nykyiset valinnat.
+        if (periodMonths === -1) {
+            populateCustomRangeSelects();
+            const all = getAllMonthKeysAsc();
+            if (all.length) {
+                if (!customStartKey || !all.some(m => m.key === customStartKey)) {
+                    customStartKey = all[Math.max(0, all.length - 6)].key;
+                }
+                if (!customEndKey || !all.some(m => m.key === customEndKey)) {
+                    customEndKey = all[all.length - 1].key;
+                }
+                document.getElementById('periodCustomStart').value = customStartKey;
+                document.getElementById('periodCustomEnd').value   = customEndKey;
+                document.getElementById('periodCustom').classList.add('is-visible');
+            }
+        }
         updatePeriodRangeText();
         updateTimelineCharts();
     };
@@ -604,7 +867,18 @@ const dataLabelsPlugin = {
                     if (val == null || val === 0) return;
                     const label = Math.round(val).toLocaleString('fi-FI');
                     ctx.save();
-                    ctx.font = '600 9px "DM Sans", sans-serif';
+                    // Skaalaa fonttikokoa pylvään leveyden mukaan jotta numero mahtuu aina näkyviin
+                    let fontPx = 9;
+                    ctx.font = `600 ${fontPx}px "DM Sans", sans-serif`;
+                    const barWidth = (el.width || 0);
+                    if (barWidth > 0) {
+                        const tw = ctx.measureText(label).width;
+                        const maxW = barWidth + 4; // mini-mode saa hieman levitä pylvään yli
+                        if (tw > maxW) {
+                            fontPx = Math.max(6, Math.floor(fontPx * (maxW / tw)));
+                            ctx.font = `600 ${fontPx}px "DM Sans", sans-serif`;
+                        }
+                    }
                     ctx.fillStyle = '#475569';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'bottom';
@@ -625,19 +899,69 @@ const dataLabelsPlugin = {
                 meta.data.forEach((el, j) => {
                     const val = ds.data[j];
                     if (val == null || val === 0) return;
-                    // Älä piirrä jos palkki on liian matala tekstille (vähintään ~20px)
                     const barHeight = Math.abs(el.base - el.y);
-                    if (barHeight < 20) return;
                     const label = Math.round(val).toLocaleString('fi-FI');
                     ctx.save();
-                    ctx.font = '600 9px "DM Sans", sans-serif';
-                    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-                    ctx.fillText(label, el.x, el.y + 5);
+                    // Skaalaa fonttia pylvään leveyden mukaan jotta numero pysyy aina näkyvissä
+                    let fontPx = 9;
+                    ctx.font = `600 ${fontPx}px "DM Sans", sans-serif`;
+                    const barWidth = (el.width || 0);
+                    if (barWidth > 0) {
+                        const tw = ctx.measureText(label).width;
+                        const maxW = barWidth - 2;
+                        if (tw > maxW) {
+                            fontPx = Math.max(6, Math.floor(fontPx * (maxW / tw)));
+                            ctx.font = `600 ${fontPx}px "DM Sans", sans-serif`;
+                        }
+                    }
+                    // Jos pylväs on niin matala ettei skaalattu fonttikaan mahdu sisälle,
+                    // siirrä numero pylvään yläpuolelle tummalla värillä
+                    if (barHeight < fontPx + 4) {
+                        ctx.fillStyle = '#334155';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(label, el.x, el.y - 2);
+                    } else {
+                        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'top';
+                        ctx.fillText(label, el.x, el.y + 3);
+                    }
                     ctx.restore();
                 });
             });
+            return;
+        }
+
+        // _stackTotals-tila: piirrä pinottujen palkkien yhteissumma ylimmän palkin päälle
+        if (chart.options._stackTotals) {
+            const barDsIdx = chart.data.datasets
+                .map((ds, i) => ({ ds, i }))
+                .filter(o => (o.ds.type || chart.config.type) === 'bar' && !chart.getDatasetMeta(o.i).hidden);
+            if (barDsIdx.length === 0) return;
+            const n = barDsIdx[0].ds.data.length;
+            for (let j = 0; j < n; j++) {
+                let total = 0;
+                let topY = Infinity;
+                let topX = null;
+                barDsIdx.forEach(o => {
+                    const v = o.ds.data[j];
+                    if (v == null) return;
+                    total += Number(v) || 0;
+                    const meta = chart.getDatasetMeta(o.i);
+                    const el = meta.data[j];
+                    if (el && el.y < topY) { topY = el.y; topX = el.x; }
+                });
+                if (total <= 0 || topX == null) continue;
+                const label = Math.round(total).toLocaleString('fi-FI');
+                ctx.save();
+                ctx.font = 'bold 10px "DM Sans", sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(label, topX, topY - 4);
+                ctx.restore();
+            }
             return;
         }
 
@@ -770,6 +1094,16 @@ function getAllMonthLabels() {
     if (periodMonths > 0 && all.length > periodMonths) {
         return all.slice(-periodMonths);
     }
+    // Mukautettu aikaväli
+    if (periodMonths === -1 && customStartKey && customEndKey) {
+        const startIdx = all.findIndex(m => m.key === customStartKey);
+        const endIdx   = all.findIndex(m => m.key === customEndKey);
+        if (startIdx >= 0 && endIdx >= 0) {
+            const lo = Math.min(startIdx, endIdx);
+            const hi = Math.max(startIdx, endIdx);
+            return all.slice(lo, hi + 1);
+        }
+    }
     return all;
 }
 
@@ -779,6 +1113,68 @@ function setPeriod(months) {
     document.querySelectorAll('.period-buttons button').forEach(b => {
         b.classList.toggle('active', Number(b.dataset.months) === months);
     });
+    const customBox = document.getElementById('periodCustom');
+    if (customBox) customBox.classList.toggle('is-visible', months === -1);
+    if (months === -1) {
+        populateCustomRangeSelects();
+        // Aseta oletukset jos puuttuvat
+        if (!customStartKey || !customEndKey) {
+            const all = getAllMonthKeysAsc();
+            if (all.length) {
+                customStartKey = customStartKey || all[Math.max(0, all.length - 6)].key;
+                customEndKey   = customEndKey   || all[all.length - 1].key;
+                document.getElementById('periodCustomStart').value = customStartKey;
+                document.getElementById('periodCustomEnd').value   = customEndKey;
+            }
+        }
+    }
+    updatePeriodRangeText();
+    updateTimelineCharts();
+}
+
+// Palauttaa kaikki uniikit kuukaudet aikajärjestyksessä (ilman period-rajausta)
+function getAllMonthKeysAsc() {
+    const set = new Set();
+    uploadedData.forEach(r => {
+        const m = r["Month of Event Date"], y = r["Year of Event Date"];
+        if (m && y) set.add(`${m}|${y}`);
+    });
+    return [...set].sort((a,b) => {
+        const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
+        if (ya !== yb) return Number(ya) - Number(yb);
+        return FI_MONTHS.indexOf(ma) - FI_MONTHS.indexOf(mb);
+    }).map(k => {
+        const [m,y] = k.split('|');
+        return { key: k, label: `${m} ${y}` };
+    });
+}
+
+function populateCustomRangeSelects() {
+    const all = getAllMonthKeysAsc();
+    const startSel = document.getElementById('periodCustomStart');
+    const endSel   = document.getElementById('periodCustomEnd');
+    if (!startSel || !endSel) return;
+    const opts = all.map(m => `<option value="${m.key}">${m.label}</option>`).join('');
+    startSel.innerHTML = opts;
+    endSel.innerHTML   = opts;
+    if (customStartKey && all.some(m => m.key === customStartKey)) startSel.value = customStartKey;
+    if (customEndKey   && all.some(m => m.key === customEndKey))   endSel.value   = customEndKey;
+}
+
+function onCustomRangeChange() {
+    const startSel = document.getElementById('periodCustomStart');
+    const endSel   = document.getElementById('periodCustomEnd');
+    if (!startSel || !endSel) return;
+    customStartKey = startSel.value;
+    customEndKey   = endSel.value;
+    // Varmista että alku ei ole loppua myöhemmin: jos on, vaihda keskenään visuaalisesti
+    const all = getAllMonthKeysAsc();
+    const si = all.findIndex(m => m.key === customStartKey);
+    const ei = all.findIndex(m => m.key === customEndKey);
+    if (si > ei && ei >= 0) {
+        // Vaihda näytöllä järjestys oikeaksi mutta säilytä käyttäjän valinta sisäisesti
+        // (getAllMonthLabels normalisoi min/max joka tapauksessa)
+    }
     updatePeriodRangeText();
     updateTimelineCharts();
 }
@@ -802,6 +1198,290 @@ function updateTimelineCharts() {
     else renderCompareView();
 }
 
+// ─── KPI-APUFUNKTIOT ─────────────────────────────────────────────────────────
+function animateCountUp(el, target, formatter) {
+    formatter = formatter || (v => Math.round(v).toLocaleString('fi-FI'));
+    // Ohita animaatio jos Chart-animaatiot on poistettu (PDF-kaappaus)
+    if (window.Chart && Chart.defaults && Chart.defaults.animation === false) {
+        el.textContent = formatter(target);
+        return;
+    }
+    const startStr = (el.textContent || '0').replace(/[^\d.-]/g,'');
+    const start = parseFloat(startStr) || 0;
+    if (start === target) { el.textContent = formatter(target); return; }
+    const duration = 700;
+    const t0 = performance.now();
+    const step = (now) => {
+        const p = Math.min(1, (now - t0) / duration);
+        const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+        const val = start + (target - start) * eased;
+        el.textContent = formatter(val);
+        if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+}
+
+function onToggleTrends(checked) {
+    document.body.classList.toggle('hide-trends', !checked);
+    try { localStorage.setItem('arvolaskuri.hideTrends', checked ? '0' : '1'); } catch(e) {}
+}
+
+function toggleInsights() {
+    const row = document.getElementById('insightsRow');
+    const reopen = document.getElementById('insightsReopen');
+    if (!row || !reopen) return;
+    const collapsed = row.classList.toggle('is-collapsed');
+    reopen.classList.toggle('is-visible', collapsed);
+    try { localStorage.setItem('arvolaskuri.hideInsights', collapsed ? '1' : '0'); } catch(e) {}
+    // Kun osio avataan, donitsi-canvas oli display:none ja sen sisäiset mitat
+    // saattavat olla nollat. Piirrä kaaviot uudelleen näkyvällä koolla.
+    if (!collapsed) {
+        try { updateTimelineCharts(); } catch(e) {}
+    }
+}
+
+function restoreDisplayPrefs() {
+    try {
+        if (localStorage.getItem('arvolaskuri.hideTrends') === '1') {
+            document.body.classList.add('hide-trends');
+            const cb = document.getElementById('showTrendsToggle');
+            if (cb) cb.checked = false;
+        }
+        if (localStorage.getItem('arvolaskuri.hideInsights') === '1') {
+            const row = document.getElementById('insightsRow');
+            const reopen = document.getElementById('insightsReopen');
+            if (row) row.classList.add('is-collapsed');
+            if (reopen) reopen.classList.add('is-visible');
+        }
+    } catch(e) {}
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', restoreDisplayPrefs);
+} else {
+    restoreDisplayPrefs();
+}
+
+function setTrendBadge(elId, currentVal, previousVal, opts) {
+    opts = opts || {};
+    const el = document.getElementById(elId);
+    if (!el) return;
+    // Ei vertailujaksoa saatavilla
+    if (previousVal === null || previousVal === undefined) {
+        el.className = 'kpi-trend muted';
+        el.textContent = opts.fallback || '–';
+        return;
+    }
+    if (previousVal === 0) {
+        if (currentVal === 0) {
+            el.className = 'kpi-trend flat';
+            el.textContent = '0 %';
+        } else {
+            el.className = 'kpi-trend up';
+            el.textContent = '▲ uusi';
+        }
+        return;
+    }
+    const pct = ((currentVal - previousVal) / previousVal) * 100;
+    const sign = pct > 0 ? '▲' : pct < 0 ? '▼' : '■';
+    const cls  = pct > 0.5 ? 'up' : pct < -0.5 ? 'down' : 'flat';
+    el.className = 'kpi-trend ' + cls;
+    el.textContent = `${sign} ${Math.abs(pct).toFixed(pct > 10 || pct < -10 ? 0 : 1)} %`;
+}
+
+// Edellisen yhtä pitkän vertailujakson summa kustakin sarjasta
+function computePreviousPeriodTotals(stores) {
+    if (periodMonths === 0) return null; // "kaikki" — ei vertailujaksoa
+    const set = new Set();
+    uploadedData.forEach(r => {
+        const m = r["Month of Event Date"], y = r["Year of Event Date"];
+        if (m && y) set.add(`${m}|${y}`);
+    });
+    const allMonths = [...set].sort((a,b) => {
+        const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
+        if (ya !== yb) return Number(ya) - Number(yb);
+        return FI_MONTHS.indexOf(ma) - FI_MONTHS.indexOf(mb);
+    }).map(k => { const [m,y] = k.split('|'); return { month:m, year:y, key:k }; });
+
+    // Määritä jakson pituus ja sijainti
+    let periodLen, periodEndIdx;
+    if (periodMonths === -1) {
+        // Mukautettu vaatii voimassa olevat avaimet — muuten ei vertailujaksoa
+        if (!customStartKey || !customEndKey) return null;
+        const si = allMonths.findIndex(m => m.key === customStartKey);
+        const ei = allMonths.findIndex(m => m.key === customEndKey);
+        if (si < 0 || ei < 0) return null;
+        const lo = Math.min(si, ei), hi = Math.max(si, ei);
+        periodLen = hi - lo + 1;
+        periodEndIdx = lo; // edellinen jakso päättyy juuri ennen mukautetun jakson alkua
+    } else {
+        periodLen = periodMonths;
+        periodEndIdx = allMonths.length - periodMonths; // edellinen jakso päättyy juuri ennen nykyisen alkua
+    }
+    if (periodLen <= 0 || periodEndIdx < periodLen) return null;
+    const prevMonths = allMonths.slice(periodEndIdx - periodLen, periodEndIdx);
+    let leads = 0, views = 0, ads = 0, n = 0;
+    stores.forEach(s => {
+        prevMonths.forEach(m => {
+            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+            if (!row) return;
+            leads += (parseFloat(row["N Conversation Start"])||0)
+                   + (parseFloat(row["N Homepage Link Clicked"])||0)
+                   + (parseFloat(row["N Phone Leads"])||0);
+            views += parseFloat(row["N Ad Views"])||0;
+            ads   += parseFloat(row["N Ads"])||0;
+            n++;
+        });
+    });
+    return { leads, views, avgAds: n > 0 ? Math.round(ads / n) : 0 };
+}
+
+function renderChannelDonut(channelTotals) {
+    const total = channelTotals.conv + channelTotals.home + channelTotals.phone;
+    document.getElementById('donutCenterValue').textContent = Math.round(total).toLocaleString('fi-FI');
+    const el = document.getElementById('chartChannelDonut');
+    if (chartChannelDonut) chartChannelDonut.destroy();
+    chartChannelDonut = new Chart(el, {
+        type: 'doughnut',
+        data: {
+            labels: ['Viestit', 'Verkko-ohjaukset', 'Puhelusoitot'],
+            datasets: [{
+                data: [channelTotals.conv, channelTotals.home, channelTotals.phone],
+                backgroundColor: ['#f94f55', '#005eff', '#10b981'],
+                borderColor: '#ffffff',
+                borderWidth: 3,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '68%',
+            // _skipLabels: estää globaalin custom dataLabels-pluginin (rivi ~771) numeroita
+            // piirtymästä donutin päälle. Älä poista — muuten keskellä näkyy sotku.
+            _skipLabels: true,
+            layout: { padding: 0 },
+            animation: (window.Chart && Chart.defaults && Chart.defaults.animation === false)
+                ? false
+                : { duration: 600, easing: 'easeOutQuart' },
+            plugins: {
+                legend: { position: 'bottom', labels: { font:{weight:'600',size:11}, padding:10, usePointStyle:true, pointStyle:'circle', boxWidth:8 } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const v = ctx.parsed;
+                            const pct = total > 0 ? (v/total*100).toFixed(1) : '0';
+                            return `${ctx.label}: ${Math.round(v).toLocaleString('fi-FI')} (${pct} %)`;
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [{
+            // Asemoi HTML-keskielementti tarkasti donitsin keskipisteeseen
+            // riippumatta legendin viemästä tilasta.
+            id: 'donutCenterPositioner',
+            afterDraw(chart) {
+                const meta = chart.getDatasetMeta(0);
+                const arc = meta && meta.data && meta.data[0];
+                const el = document.getElementById('donutCenter');
+                if (!arc || !el) return;
+                el.style.top = arc.y + 'px';
+                el.style.left = arc.x + 'px';
+            }
+        }]
+    });
+}
+
+function renderInsights(stores, monthList, totals, channelTotals) {
+    const list = document.getElementById('insightsList');
+    const findRow = (s, m) => s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+
+    // 1) Paras kuukausi (kaikkien valittujen kauppojen liidit yhteensä)
+    let bestMonth = null, bestLeads = -1;
+    monthList.forEach(m => {
+        let l = 0;
+        stores.forEach(s => {
+            const row = findRow(s, m);
+            if (!row) return;
+            l += (parseFloat(row["N Conversation Start"])||0)
+              + (parseFloat(row["N Homepage Link Clicked"])||0)
+              + (parseFloat(row["N Phone Leads"])||0);
+        });
+        if (l > bestLeads) { bestLeads = l; bestMonth = m; }
+    });
+
+    // 2) Tehokkain kauppa (liidit per ilmoitus)
+    let bestStore = null, bestRatio = -1;
+    stores.forEach(s => {
+        let l = 0, a = 0;
+        monthList.forEach(m => {
+            const row = findRow(s, m);
+            if (!row) return;
+            l += (parseFloat(row["N Conversation Start"])||0)
+              + (parseFloat(row["N Homepage Link Clicked"])||0)
+              + (parseFloat(row["N Phone Leads"])||0);
+            a += parseFloat(row["N Ads"])||0;
+        });
+        if (a > 0) {
+            const r = l / a;
+            if (r > bestRatio) { bestRatio = r; bestStore = { name: s.name, ratio: r, leads: l, ads: a }; }
+        }
+    });
+
+    // 3) Liidit / ilmoitus -keskiarvo
+    const leadsPerAdAvg = totals.totalAds > 0 ? totals.totalLeads / totals.totalAds : 0;
+
+    // Suurin kanava
+    const channels = [
+        { name:'viesteinä',       v: channelTotals.conv },
+        { name:'verkko-ohjauksina', v: channelTotals.home },
+        { name:'puheluina',       v: channelTotals.phone }
+    ].sort((a,b)=>b.v-a.v);
+    const channelTotal = channels.reduce((s,c)=>s+c.v,0);
+    const topChannel = channels[0];
+    const topChannelPct = channelTotal > 0 ? (topChannel.v / channelTotal * 100) : 0;
+
+    const items = [];
+    if (bestMonth && bestLeads > 0) {
+        items.push({
+            color: 'brand', icon: '★',
+            label: 'Paras kuukausi',
+            value: bestMonth.label.charAt(0).toUpperCase() + bestMonth.label.slice(1),
+            sub: `${Math.round(bestLeads).toLocaleString('fi-FI')} liidiä yhteensä`
+        });
+    }
+    if (bestStore) {
+        items.push({
+            color: 'blue', icon: '▲',
+            label: 'Tehokkain kauppa',
+            value: bestStore.name,
+            sub: `${bestStore.ratio.toFixed(2)} liidiä / ilmoitus`
+        });
+    }
+    items.push({
+        color: 'green', icon: '∑',
+        label: 'Liidit per ilmoitus (ka)',
+        value: leadsPerAdAvg.toFixed(2),
+        sub: `${Math.round(totals.totalLeads).toLocaleString('fi-FI')} liidiä / ${Math.round(totals.totalAds).toLocaleString('fi-FI')} ilmoitusta`
+    });
+    if (topChannel && topChannel.v > 0) {
+        items.push({
+            color: 'orange', icon: '◆',
+            label: 'Suurin liidikanava',
+            value: `${topChannelPct.toFixed(0)} % ${topChannel.name}`,
+            sub: `${Math.round(topChannel.v).toLocaleString('fi-FI')} liidiä kanavasta`
+        });
+    }
+
+    list.innerHTML = items.map(it => `
+        <div class="insight-item color-${it.color}">
+            <span class="insight-icon">${it.icon}</span>
+            <div class="insight-label">${it.label}</div>
+            <div class="insight-value">${it.value}</div>
+            <div class="insight-sub">${it.sub}</div>
+        </div>
+    `).join('');
+}
+
 // ─── YHTEENVETO-NÄKYMÄ ───────────────────────────────────────────────────────
 function renderSummaryView() {
     const stores = getSelectedStoresData();
@@ -811,35 +1491,52 @@ function renderSummaryView() {
     // Apufunktio: hakee tietyn kuukauden rivin kaupalta
     const findRow = (s, m) => s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
 
-    // KPI:t — lasketaan VAIN valitulle aikajaksolle
+    // KPI:t — lasketaan VAIN valitulle aikajaksolle (+ kanavajakauma)
     let totalLeads = 0, totalViews = 0, totalAds = 0, monthsWithData = 0;
+    let chConv = 0, chHome = 0, chPhone = 0;
     stores.forEach(s => {
-        monthList.forEach(m => {
+        monthList.forEach((m) => {
             const row = findRow(s, m);
             if (!row) return;
-            totalLeads += (parseFloat(row["N Conversation Start"])||0)
-                       + (parseFloat(row["N Homepage Link Clicked"])||0)
-                       + (parseFloat(row["N Phone Leads"])||0);
-            totalViews += parseFloat(row["N Ad Views"])||0;
-            totalAds   += parseFloat(row["N Ads"])||0;
+            const c = parseFloat(row["N Conversation Start"])||0;
+            const h = parseFloat(row["N Homepage Link Clicked"])||0;
+            const p = parseFloat(row["N Phone Leads"])||0;
+            const v = parseFloat(row["N Ad Views"])||0;
+            const a = parseFloat(row["N Ads"])||0;
+            totalLeads += c+h+p; totalViews += v; totalAds += a;
+            chConv += c; chHome += h; chPhone += p;
             monthsWithData++;
         });
     });
     const avgAdsPerMonth = monthsWithData > 0 ? Math.round(totalAds / monthsWithData) : 0;
 
     // KPI-alaotsikon teksti riippuu jaksosta
-    const periodSub = periodMonths === 0 ? 'koko ajalta'
-                    : periodMonths === 1 ? 'viim. kuukausi'
+    const monthsInView = getAllMonthLabels().length;
+    const periodSub = periodMonths === 0  ? 'koko ajalta'
+                    : periodMonths === -1 ? `mukautettu (${monthsInView} kk)`
+                    : periodMonths === 1  ? 'viim. kuukausi'
                     : `viim. ${periodMonths} kk`;
 
+    // Animoidut numerot
     document.getElementById('kpiStores').textContent = stores.length;
-    document.getElementById('kpiStoresSub').textContent = stores.length === 1 ? 'valittuna' : 'valittuna';
-    document.getElementById('kpiLeads').textContent = Math.round(totalLeads).toLocaleString('fi-FI');
+    document.getElementById('kpiStoresSub').textContent = 'valittuna';
+    animateCountUp(document.getElementById('kpiLeads'), totalLeads);
     document.getElementById('kpiLeadsSub').textContent = periodSub;
-    document.getElementById('kpiViews').textContent = Math.round(totalViews).toLocaleString('fi-FI');
+    animateCountUp(document.getElementById('kpiViews'), totalViews);
     document.getElementById('kpiViewsSub').textContent = periodSub;
-    document.getElementById('kpiAds').textContent = avgAdsPerMonth.toLocaleString('fi-FI');
+    animateCountUp(document.getElementById('kpiAds'), avgAdsPerMonth);
     document.getElementById('kpiAdsSub').textContent = 'per kuukausi';
+
+    // Trendit vs edellinen yhtä pitkä jakso
+    const prev = computePreviousPeriodTotals(stores);
+    setTrendBadge('kpiLeadsTrend', totalLeads,    prev ? prev.leads  : null);
+    setTrendBadge('kpiViewsTrend', totalViews,    prev ? prev.views  : null);
+    setTrendBadge('kpiAdsTrend',   avgAdsPerMonth, prev ? prev.avgAds : null);
+    document.getElementById('kpiStoresTrend').textContent = stores.length === 1 ? '1 kauppa' : 'valittuna';
+
+    // Donut + insights
+    renderChannelDonut({ conv: chConv, home: chHome, phone: chPhone });
+    renderInsights(stores, monthList, { totalLeads, totalViews, totalAds }, { conv: chConv, home: chHome, phone: chPhone });
 
     // Liidit-kuvaaja: pinotut palkit kuukausittain
     const leadsDatasets = stores.map(s => ({
@@ -880,7 +1577,8 @@ function renderSummaryView() {
                 x:{ stacked:true, grid:{display:false}, ticks:{maxRotation:45} },
                 y:{ stacked:true, grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Liidit (kpl)'} }
             },
-            layout:{ padding:{ top:22 } }
+            layout:{ padding:{ top:22 } },
+            _stackTotals: true
         }
     });
 
@@ -938,7 +1636,8 @@ function renderSummaryView() {
                 y:{ stacked:true, grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Klikkaukset'} },
                 y2:{ grid:{display:false}, beginAtZero:true, position:'right', title:{display:true, text:'Ilmoitukset (kpl)'} }
             },
-            layout:{ padding:{ top:22 } }
+            layout:{ padding:{ top:22 } },
+            _stackTotals: true
         }
     });
 }
@@ -1337,53 +2036,411 @@ function calculateCPC() {
 }
 
 // ─── PDF EXPORT ───────────────────────────────────────────────────────────────
-async function exportPDF() {
+function openPdfModal() {
+    // Päivitä päivitysehdotus-checkbox vastaamaan Arvolaskurin tilaa
+    const showProp = document.getElementById('showProposal').checked;
+    const propCb = document.getElementById('pdfOptProposal');
+    propCb.checked = showProp;
+
+    // Tilastot-osion saatavuus
+    const statsAvailable = uploadedData && uploadedData.length > 0;
+    const statsWrap = document.getElementById('pdfOptStatsWrap');
+    const statsCb   = document.getElementById('pdfOptStats');
+    statsCb.disabled = !statsAvailable;
+    statsCb.checked  = statsAvailable;
+    statsWrap.classList.toggle('disabled', !statsAvailable);
+
+    // Trendi-checkbox: pois käytöstä jos tilastoja ei voi sisällyttää
+    const trendCb = document.getElementById('pdfOptTrend');
+    trendCb.disabled = !statsAvailable;
+
+    document.getElementById('pdfModal').classList.add('show');
+}
+
+function closePdfModal() {
+    document.getElementById('pdfModal').classList.remove('show');
+}
+
+// Sulje modaali Esc-näppäimellä tai klikkaamalla taustaa
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePdfModal();
+});
+document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'pdfModal') closePdfModal();
+});
+
+function runPdfExport() {
+    const opts = {
+        current : document.getElementById('pdfOptCurrent').checked,
+        proposal: document.getElementById('pdfOptProposal').checked,
+        cpc     : document.getElementById('pdfOptCpc').checked,
+        stats   : document.getElementById('pdfOptStats').checked && !document.getElementById('pdfOptStats').disabled,
+        trend   : document.getElementById('pdfOptTrend').checked && !document.getElementById('pdfOptTrend').disabled
+    };
+    if (!opts.current && !opts.proposal && !opts.cpc && !opts.stats) {
+        alert('Valitse vähintään yksi osio raporttiin.');
+        return;
+    }
+    closePdfModal();
+    exportPDF(opts);
+}
+
+// Lasketaan KPI:t PDF:ää varten käyttäen samaa logiikkaa kuin Tilastot-välilehti.
+// Kunnioittaa periodMonths-rajausta (3 kk / 6 kk / 12 kk / Kaikki) ja kauppavalintaa.
+function buildStatsForPdf(storeFilterId, includeTrend) {
+    if (!uploadedData || !uploadedData.length) return null;
+    if (!availableStores.length) return null;
+
+    // Käytä samaa kuukauslistaa kuin Tilastot-välilehti (periodMonths huomioiden)
+    const monthList = getAllMonthLabels();
+    if (!monthList.length) return null;
+
+    // Suodata kaupat: joko yksi valittu, tai kaikki Tilastot-välilehdellä valitut
+    let stores;
+    let storeName;
+    if (storeFilterId && storeFilterId !== '__all__') {
+        const s = availableStores.find(x => x.id === String(storeFilterId));
+        if (!s) return null;
+        stores = [{ ...s, rows: uploadedData.filter(r => String(r["Aurora Organisation Id"]) === s.id) }];
+        storeName = s.name;
+    } else {
+        stores = getSelectedStoresData();
+        if (!stores.length) {
+            // Jos käyttäjä on tyhjentänyt valinnan, käytä kaikkia kauppoja PDF:ssä
+            stores = availableStores.map(s => ({
+                ...s,
+                rows: uploadedData.filter(r => String(r["Aurora Organisation Id"]) === s.id)
+            }));
+        }
+        storeName = stores.length === 1 ? stores[0].name : 'Kaikki kaupat';
+    }
+
+    const findRow = (s, m) => s.rows.find(r =>
+        r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year
+    );
+    const leadsOf = r => (parseFloat(r["N Conversation Start"])||0)
+                      + (parseFloat(r["N Homepage Link Clicked"])||0)
+                      + (parseFloat(r["N Phone Leads"])||0);
+    const viewsOf = r => parseFloat(r["N Ad Views"])||0;
+    const adsOf   = r => parseFloat(r["N Ads"])||0;
+
+    // Kuukausikohtaiset summat (kaikkien valittujen kauppojen yli)
+    const monthAgg = new Map();
+    monthList.forEach(m => monthAgg.set(m.key, { leads:0, views:0, ads:0, hasData:false }));
+
+    let monthsWithData = 0;
+    stores.forEach(s => {
+        monthList.forEach(m => {
+            const row = findRow(s, m);
+            if (!row) return;
+            const bucket = monthAgg.get(m.key);
+            bucket.leads += leadsOf(row);
+            bucket.views += viewsOf(row);
+            bucket.ads   += adsOf(row);
+            bucket.hasData = true;
+            monthsWithData++;
+        });
+    });
+
+    let totalLeads=0, totalViews=0, totalAds=0;
+    monthAgg.forEach(b => { totalLeads+=b.leads; totalViews+=b.views; totalAds+=b.ads; });
+    const avgAdsPerMonth = monthsWithData > 0 ? Math.round(totalAds / monthsWithData) : 0;
+
+    const periodLabel = monthList.length === 1
+        ? monthList[0].label
+        : `${monthList[0].label} – ${monthList[monthList.length-1].label} (${monthList.length} kk)`;
+
+    let trends = null;
+    if (includeTrend) {
+        const keys = monthList.map(m => m.key).filter(k => monthAgg.get(k).hasData);
+        if (keys.length >= 2) {
+            const half = Math.floor(keys.length / 2);
+            const firstHalf  = keys.slice(0, half);
+            const secondHalf = keys.slice(keys.length - half);
+            const sumHalf = (ks, field) => ks.reduce((s,k) => s + monthAgg.get(k)[field], 0);
+            const pct = (a, b) => {
+                if (!a && !b) return 0;
+                if (!a) return 100;
+                return ((b - a) / a) * 100;
+            };
+            trends = {
+                leads: pct(sumHalf(firstHalf,'leads'), sumHalf(secondHalf,'leads')),
+                views: pct(sumHalf(firstHalf,'views'), sumHalf(secondHalf,'views')),
+                ads:   pct(sumHalf(firstHalf,'ads'),   sumHalf(secondHalf,'ads'))
+            };
+        }
+    }
+
+    return {
+        storeName,
+        storeCount: stores.length,
+        totalLeads,
+        totalViews,
+        avgAdsPerMonth,
+        periodLabel,
+        trends
+    };
+}
+
+// Aktivoi Tilastot-välilehti väliaikaisesti, asettaa kauppavalinnan,
+// odottaa Chart.js:n piirron ja palauttaa <canvas>-elementin sisällöstä.
+async function captureTilastotForPdf() {
+    if (!uploadedData || !uploadedData.length) return null;
+    if (typeof html2canvas !== 'function') {
+        console.warn('html2canvas ei ole ladattu');
+        return null;
+    }
+
+    // Talleta nykyinen tila
+    const activeTab    = document.querySelector('.tab-content.active');
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+
+    // Käytä Tilastot-välilehden nykyistä kauppavalintaa sellaisenaan.
+    // Jos mitään ei ole valittu, käytä kaikkia kauppoja oletuksena.
+    if (selectedStoreIds.size === 0 && availableStores.length > 0) {
+        selectedStoreIds = new Set(availableStores.map(s => s.id));
+    }
+    const count = selectedStoreIds.size;
+    const total = availableStores.length;
+    let storeLabel;
+    if (count === 0)               storeLabel = '';
+    else if (count === total)      storeLabel = 'Kaikki kaupat';
+    else if (count === 1) {
+        const id = [...selectedStoreIds][0];
+        storeLabel = availableStores.find(s => s.id === id)?.name || '';
+    } else                         storeLabel = `${count} kauppaa`;
+
+    let summaryCanvas = null, compareCanvas = null;
+    const prevView = timelineView;
+    // Pidä Chart.js-animaatiot pois päältä kaappauksen ajan jotta saadaan
+    // deterministinen lopputulos (ei välianimaatiokehystä kuvaan)
+    const prevAnimDefault = (window.Chart && Chart.defaults && Chart.defaults.animation) ? Chart.defaults.animation : undefined;
+
+    const captureCurrentView = async () => {
+        try { updateTimelineCharts(); } catch(e) {}
+        // Pakota kaaviot lasketut uudelleen näkyvän kontainerin koolla.
+        // Ilman tätä piilotetussa välilehdessä luodut canvasit jäävät 0-kokoisiksi
+        // ja html2canvas tallentaa tyhjän kuvan.
+        [chartTimeline, chartViewsAds, chartChannelDonut].forEach(c => {
+            if (c && typeof c.resize === 'function') {
+                try { c.resize(); c.update('none'); } catch(e) {}
+            }
+        });
+        // Pieni odotus, jotta layout + Chart.js piirto ehtii valmistua
+        await new Promise(r => setTimeout(r, 600));
+        const timelineTab = document.getElementById('timeline-tab');
+        try {
+            return await html2canvas(timelineTab, {
+                scale: 2,
+                backgroundColor: '#f4f6fb',
+                useCORS: true,
+                logging: false
+            });
+        } catch (err) {
+            console.error('Tilastot-kaappaus epäonnistui:', err);
+            return null;
+        }
+    };
+
+    // Pakota Liidikanavat/Havainnot-osio näkyviin kaappauksen ajaksi vaikka
+    // käyttäjä olisi piilottanut sen UI:ssa — muuten PDF jää ilman donitsia.
+    const insightsRow = document.getElementById('insightsRow');
+    const insightsReopen = document.getElementById('insightsReopen');
+    const insightsWasCollapsed = insightsRow && insightsRow.classList.contains('is-collapsed');
+    if (insightsWasCollapsed) {
+        insightsRow.classList.remove('is-collapsed');
+        if (insightsReopen) insightsReopen.classList.remove('is-visible');
+    }
+
+    try {
+        if (window.Chart && Chart.defaults) Chart.defaults.animation = false;
+
+        // Aktivoi Tilastot-välilehti
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const timelineTab = document.getElementById('timeline-tab');
+        timelineTab.classList.add('active');
+        const timelineBtn = document.querySelector('.tab-btn[onclick*="timeline-tab"]');
+        if (timelineBtn) timelineBtn.classList.add('active');
+
+        try { renderStoreOptions(); } catch(e) {}
+        try { updateStoreFilterUI(); } catch(e) {}
+        try { updatePeriodRangeText(); } catch(e) {}
+
+        // Kaappaa Yhteenveto
+        try { setTimelineView('summary'); } catch(e) {}
+        summaryCanvas = await captureCurrentView();
+
+        // Kaappaa Vertailu (vain jos useita kauppoja → muuten vertailusta ei ole hyötyä)
+        if (selectedStoreIds.size > 1) {
+            try { setTimelineView('compare'); } catch(e) {}
+            compareCanvas = await captureCurrentView();
+        }
+    } finally {
+        if (prevAnimDefault !== undefined && window.Chart && Chart.defaults) {
+            Chart.defaults.animation = prevAnimDefault;
+        }
+        // Palauta Liidikanavat-osion piilotila, jos se oli piilossa
+        if (insightsWasCollapsed && insightsRow) {
+            insightsRow.classList.add('is-collapsed');
+            if (insightsReopen) insightsReopen.classList.add('is-visible');
+        }
+        // Palauta näkymä
+        try { setTimelineView(prevView); } catch(e) {}
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        if (activeTab) activeTab.classList.add('active');
+        if (activeTabBtn) activeTabBtn.classList.add('active');
+        try { renderStoreOptions(); } catch(e) {}
+        try { updateStoreFilterUI(); } catch(e) {}
+        try { updatePeriodRangeText(); } catch(e) {}
+        try { updateTimelineCharts(); } catch(e) {}
+    }
+
+    return (summaryCanvas || compareCanvas)
+        ? { summaryCanvas, compareCanvas, storeLabel }
+        : null;
+}
+
+// Pilkkoo ison kuvan PDF-sivuille käyttäen jäljellä olevaa tilaa nykyisellä
+// sivulla. Aloittaa uudet sivut tarvittaessa. Palauttaa uuden y-koordinaatin.
+async function sliceCanvasIntoPdf(pdf, srcCanvas, margin, contentW, currentY, pageH, drawHeader, drawFooter) {
+    const pxPerMm = srcCanvas.width / contentW;
+    const bottomMargin = 18; // tilaa footerille
+    let y = currentY;
+    let pixelOffset = 0;
+    let firstSlice = true;
+
+    // Jos sisältö ei mahdu nykyiselle sivulle, valitse strategia ylivuodon koon
+    // mukaan. Tavoite: ei tyhjännäköisiä sivuja ja ei roikkuvaa hännän palasta.
+    const fullMm = srcCanvas.height / pxPerMm;
+    const availMmHere = pageH - y - bottomMargin;
+    const fullPageMm = pageH - 54 - bottomMargin;
+    if (fullMm > availMmHere) {
+        const overflowCurrent = fullMm / availMmHere; // >1 = ei mahdu nykyiselle
+        // a) Pieni ylivuoto (≤ 25 %) → skaalaa mahtumaan NYKYISELLE sivulle.
+        //    Otsikko ("Tilastot · Yhteenveto") on jo täällä, joten sitä ei jätetä
+        //    yksin tyhjälle sivulle. Skaalaus 0.80–1.00.
+        if (overflowCurrent <= 1.25) {
+            const scale = availMmHere / fullMm;
+            const drawW = contentW * scale;
+            const drawH = availMmHere;
+            const drawX = margin + (contentW - drawW) / 2;
+            pdf.addImage(srcCanvas.toDataURL('image/png'), 'PNG', drawX, y, drawW, drawH);
+            return y + drawH + 5;
+        }
+        // b) Iso sisältö → annetaan alla olevan loopin pilkkoa normaalisti
+    }
+
+    while (pixelOffset < srcCanvas.height) {
+        const availableMm = (pageH - y - bottomMargin);
+        if (availableMm < 30) {
+            // Ei riittävästi tilaa — uusi sivu
+            drawFooter();
+            pdf.addPage();
+            drawHeader();
+            y = 54;
+            continue;
+        }
+        const availablePx = Math.floor(availableMm * pxPerMm);
+        const remainingPx = srcCanvas.height - pixelOffset;
+        const slicePx = Math.min(remainingPx, availablePx);
+        // Suojaus ylimääräistä lähes tyhjää sivua vastaan: jos jäljellä on
+        // vain pieni tähde (alle ~5 mm = ~15 px @scale 2), lopetetaan.
+        if (slicePx < 8) break;
+
+        // Leikkaa pala lähde-canvaksesta
+        const slice = document.createElement('canvas');
+        slice.width = srcCanvas.width;
+        slice.height = slicePx;
+        const ctx = slice.getContext('2d');
+        ctx.fillStyle = '#f4f6fb';
+        ctx.fillRect(0, 0, slice.width, slice.height);
+        ctx.drawImage(srcCanvas, 0, pixelOffset, srcCanvas.width, slicePx, 0, 0, srcCanvas.width, slicePx);
+        const dataUrl = slice.toDataURL('image/png');
+        const sliceMm = slicePx / pxPerMm;
+
+        pdf.addImage(dataUrl, 'PNG', margin, y, contentW, sliceMm);
+        y += sliceMm + 5;
+        pixelOffset += slicePx;
+        firstSlice = false;
+
+        // Lisää uusi sivu vain jos jäljellä oleva tähde on tarpeeksi iso
+        // renderöitäväksi (>= ~3 mm). Muuten loppupiirros jäisi näkymättömän
+        // pieneksi ja uusi sivu näyttäisi tyhjältä.
+        const remainingAfter = srcCanvas.height - pixelOffset;
+        const minNextPx = Math.max(8, Math.ceil(3 * pxPerMm));
+        if (remainingAfter >= minNextPx) {
+            drawFooter();
+            pdf.addPage();
+            drawHeader();
+            y = 54;
+        } else {
+            break;
+        }
+    }
+    return y;
+}
+
+async function exportPDF(opts) {
+    opts = opts || { current:true, proposal:document.getElementById('showProposal').checked, cpc:true, stats:false, trend:false, storeId:null };
     document.getElementById('pdfOverlay').classList.add('show');
     try {
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
         const pageW=210,pageH=297,margin=15,contentW=180;
-        const RED=[249,79,85],BLUE=[0,94,255],DARK=[15,23,42],GRAY=[100,116,139],LIGHT=[248,250,252],BORDER=[232,236,244];
+        const RED=[249,79,85],BLUE=[0,94,255],DARK=[15,23,42],GRAY=[100,116,139],LIGHT=[248,250,252],BORDER=[232,236,244],GREEN=[16,185,129];
 
         const g=id=>document.getElementById(id);
-        const totalAds =g('totalAds').value||'-';
-        const leadsA   =g('leadsA').value||'-';
-        const priceA   =g('priceA').value||'-';
-        const pkgAName =PACKAGES[g('pkgA').selectedIndex].name;
-        const closing  =g('closing').value||'-';
-        const avgPrice =g('avgPrice').value||'-';
-        const revA     =g('uiRevA').textContent;
-        const roiA     =g('uiRoiA').textContent;
-        const showProp =g('showProposal').checked;
-        const pkgBName =PACKAGES[g('pkgB').selectedIndex].name;
-        const priceB   =g('priceB').value||'-';
-        const leadsB   =g('leadsB_manual').value||'-';
-        const revB     =g('uiRevB').textContent;
-        const roiB     =g('uiRoiB').textContent;
-        const cpcClicks=g('cpcClicks').value||'-';
-        const toriCPC  =g('uiToriCPC').textContent;
-        const cpcEff   =g('cpcEfficiency').textContent;
         const today    =new Date().toLocaleDateString('fi-FI');
-        const timeframe=timeMultiplier===1?'Kuukausi':'Vuosi';
+        const periodLabel = (!uploadedData || !uploadedData.length)
+            ? (timeMultiplier===1?'Kuukausi':'Vuosi')
+            : (periodMonths === 0  ? 'Kaikki'
+              : periodMonths === -1 ? (() => {
+                    const ml = getAllMonthLabels();
+                    return ml.length ? `${ml[0].label} – ${ml[ml.length-1].label}` : 'Mukautettu';
+                })()
+              : `${periodMonths} kk`);
 
         // Header
-        pdf.setFillColor(...RED); pdf.rect(0,0,pageW,42,'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(28); pdf.setTextColor(255,255,255);
-        pdf.text('tori',margin,22);
-        pdf.setFontSize(13); pdf.setFont('helvetica','normal');
-        pdf.text('Arvolaskuri — Raportti',margin+22,22);
-        pdf.setFontSize(10); pdf.setTextColor(255,200,200);
-        pdf.text(today,pageW-margin,22,{align:'right'});
-        pdf.setFontSize(9); pdf.setTextColor(255,180,180);
-        pdf.text(`Aikaväli: ${timeframe}`,margin,34);
+        const drawHeader = () => {
+            pdf.setFillColor(...RED); pdf.rect(0,0,pageW,42,'F');
+            pdf.setFont('helvetica','bold'); pdf.setFontSize(28); pdf.setTextColor(255,255,255);
+            pdf.text('tori',margin,22);
+            pdf.setFontSize(13); pdf.setFont('helvetica','normal');
+            pdf.text('Arvolaskuri — Raportti',margin+22,22);
+            pdf.setFontSize(10); pdf.setTextColor(255,200,200);
+            pdf.text(today,pageW-margin,22,{align:'right'});
+            pdf.setFontSize(9); pdf.setTextColor(255,180,180);
+            pdf.text(`Aikaväli: ${periodLabel}`,margin,34);
+        };
+        const drawFooter = () => {
+            pdf.setFillColor(...DARK); pdf.rect(0,pageH-14,pageW,14,'F');
+            pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(150,160,175);
+            pdf.text('Tori-Kauppa Arvolaskuri',margin,pageH-5);
+            pdf.text('Luottamuksellinen',pageW/2,pageH-5,{align:'center'});
+            pdf.text(today,pageW-margin,pageH-5,{align:'right'});
+        };
 
-        let y=54;
+        drawHeader();
+        let y = 54;
+
+        const ensureSpace = (needed) => {
+            if (y + needed > pageH - 20) {
+                drawFooter();
+                pdf.addPage();
+                drawHeader();
+                y = 54;
+            }
+        };
         const sec=t=>{
+            ensureSpace(16);
             pdf.setFillColor(...LIGHT); pdf.roundedRect(margin,y,contentW,8,2,2,'F');
             pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(...GRAY);
             pdf.text(t.toUpperCase(),margin+5,y+5.5); y+=13;
         };
         const row=(label,value,hl=false)=>{
+            ensureSpace(11);
             if(hl){pdf.setFillColor(255,240,240);pdf.rect(margin,y-4,contentW,9,'F');}
             pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.setTextColor(...GRAY);
             pdf.text(label,margin+4,y);
@@ -1393,6 +2450,7 @@ async function exportPDF() {
             y+=9;
         };
         const twoStat=(lLbl,lVal,lCol,rLbl,rVal,rCol)=>{
+            ensureSpace(36);
             const hw=(contentW-8)/2;
             [[margin,lLbl,lVal,lCol],[margin+hw+8,rLbl,rVal,rCol]].forEach(([x,lbl,val,col])=>{
                 pdf.setFillColor(255,255,255);pdf.setDrawColor(...BORDER);pdf.setLineWidth(0.4);
@@ -1405,38 +2463,148 @@ async function exportPDF() {
             });
             y+=34;
         };
+        // KPI-kortti trendi-indikaattorilla (4 kortin rivi)
+        const kpiGrid = (items) => {
+            ensureSpace(36);
+            const cols = items.length;
+            const gap = 4;
+            const cw = (contentW - gap*(cols-1)) / cols;
+            items.forEach((it, i) => {
+                const x = margin + i*(cw+gap);
+                pdf.setFillColor(255,255,255);pdf.setDrawColor(...BORDER);pdf.setLineWidth(0.4);
+                pdf.roundedRect(x,y,cw,30,3,3,'FD');
+                pdf.setFillColor(...(it.color||BLUE));pdf.rect(x,y,cw,2,'F');
+                pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(...GRAY);
+                pdf.text(String(it.label).toUpperCase(),x+cw/2,y+8,{align:'center'});
+                pdf.setFont('helvetica','bold');pdf.setFontSize(12);pdf.setTextColor(...DARK);
+                pdf.text(String(it.value),x+cw/2,y+18,{align:'center'});
+                if (it.trend != null && isFinite(it.trend)) {
+                    const up = it.trend >= 0;
+                    const col = up ? GREEN : RED;
+                    const arrow = up ? '▲' : '▼';
+                    const txt = `${arrow} ${Math.abs(it.trend).toFixed(1)} %`;
+                    pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(...col);
+                    pdf.text(txt,x+cw/2,y+25,{align:'center'});
+                } else if (it.sub) {
+                    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(...GRAY);
+                    pdf.text(String(it.sub),x+cw/2,y+25,{align:'center'});
+                }
+            });
+            y += 36;
+        };
 
-        sec('Nykytila');
-        row('Ilmoitusmäärä (N Ads)',totalAds+' kpl');
-        row('Nykyinen paketti',pkgAName);
-        row('Nykyinen hinta',priceA+' €');
-        row('Nykyiset liidit',leadsA+' kpl');
-        row('Konversio',closing+' %');
-        row('Kaupan keskihinta',avgPrice+' €');
-        y+=4;
-        twoStat('Nykyinen tuotto',revA,BLUE,'ROI nyt',roiA,RED);
+        // === NYKYTILA & ROI ===
+        if (opts.current) {
+            const totalAds =g('totalAds').value||'-';
+            const leadsA   =g('leadsA').value||'-';
+            const priceA   =g('priceA').value||'-';
+            const pkgAName =PACKAGES[g('pkgA').selectedIndex].name;
+            const closing  =g('closing').value||'-';
+            const avgPrice =g('avgPrice').value||'-';
+            const revA     =g('uiRevA').textContent;
+            const roiA     =g('uiRoiA').textContent;
 
-        if (showProp) {
+            sec('Nykytila');
+            row('Ilmoitusmäärä (N Ads)',totalAds+' kpl');
+            row('Nykyinen paketti',pkgAName);
+            row('Nykyinen hinta',priceA+' €');
+            row('Nykyiset liidit',leadsA+' kpl');
+            row('Konversio',closing+' %');
+            row('Kaupan keskihinta',avgPrice+' €');
+            y+=4;
+            twoStat('Nykyinen tuotto',revA,BLUE,'ROI nyt',roiA,RED);
+        }
+
+        // === PÄIVITYSEHDOTUS ===
+        if (opts.proposal) {
+            const pkgBName =PACKAGES[g('pkgB').selectedIndex].name;
+            const priceB   =g('priceB').value||'-';
+            const leadsB   =g('leadsB_manual').value||'-';
+            const revB     =g('uiRevB').textContent;
+            const roiB     =g('uiRoiB').textContent;
+
             sec('Päivitysehdotus');
             row('Suositeltu paketti',pkgBName);
             row('Uusi hinta',priceB+' €');
             row('Arvioidut liidit',leadsB+' kpl');
             y+=4;
-            twoStat('Ehdotettu tuotto',revB,RED,'ROI ehdotuksella',roiB,[16,185,129]);
+            twoStat('Ehdotettu tuotto',revB,RED,'ROI ehdotuksella',roiB,GREEN);
         }
 
-        sec('CPC-analyysi');
-        row('Katselukerrat / kk',Number(cpcClicks).toLocaleString('fi-FI')+' kpl');
-        row('Tori CPC',toriCPC);
-        if(cpcEff) row('Tehokkuus',cpcEff,true);
+        // === CPC-ANALYYSI ===
+        if (opts.cpc) {
+            const cpcClicks=g('cpcClicks').value||'-';
+            const toriCPC  =g('uiToriCPC').textContent;
+            const cpcEff   =g('cpcEfficiency').textContent;
 
-        // Footer
-        pdf.setFillColor(...DARK); pdf.rect(0,pageH-14,pageW,14,'F');
-        pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(150,160,175);
-        pdf.text('Tori-Kauppa Arvolaskuri',margin,pageH-5);
-        pdf.text('Luottamuksellinen',pageW/2,pageH-5,{align:'center'});
-        pdf.text(today,pageW-margin,pageH-5,{align:'right'});
+            sec('CPC-analyysi');
+            row('Katselukerrat / kk',Number(cpcClicks).toLocaleString('fi-FI')+' kpl');
+            row('Tori CPC',toriCPC);
+            if(cpcEff) row('Tehokkuus',cpcEff,true);
+        }
 
+        // === TILASTOT (kuvankaappaus Tilastot-välilehden DOMista) ===
+        if (opts.stats) {
+            const capture = await captureTilastotForPdf();
+            if (capture && (capture.summaryCanvas || capture.compareCanvas)) {
+                const storeLabel = capture.storeLabel ? ` · ${capture.storeLabel}` : '';
+
+                // --- Yhteenveto omalle sivulleen ---
+                if (capture.summaryCanvas) {
+                    drawFooter();
+                    pdf.addPage();
+                    drawHeader();
+                    y = 54;
+                    sec('Tilastot · Yhteenveto' + storeLabel);
+
+                    if (opts.trend) {
+                        const s = buildStatsForPdf(null, true);
+                        if (s && s.trends) {
+                            pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(...GRAY);
+                            pdf.text('TRENDI (alkujakso → loppujakso)', margin+4, y); y += 5;
+                            const trendItems = [
+                                { label: 'Liidit',      v: s.trends.leads },
+                                { label: 'Klikkaukset', v: s.trends.views },
+                                { label: 'Ilmoitukset', v: s.trends.ads }
+                            ];
+                            const cw = (contentW - 8) / 3;
+                            trendItems.forEach((it, i) => {
+                                const x = margin + i*(cw+4);
+                                const up = it.v >= 0;
+                                const col = up ? GREEN : RED;
+                                pdf.setFillColor(255,255,255);pdf.setDrawColor(...BORDER);pdf.setLineWidth(0.3);
+                                pdf.roundedRect(x,y,cw,11,2,2,'FD');
+                                pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(...GRAY);
+                                pdf.text(it.label, x+4, y+7);
+                                const arrow = up ? '▲' : '▼';
+                                pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(...col);
+                                pdf.text(`${arrow} ${Math.abs(it.v).toFixed(1)} %`, x+cw-4, y+7, {align:'right'});
+                            });
+                            y += 14;
+                        }
+                    }
+
+                    y = await sliceCanvasIntoPdf(pdf, capture.summaryCanvas, margin, contentW, y, pageH, drawHeader, drawFooter);
+                }
+
+                // --- Vertailu omalle sivulleen ---
+                if (capture.compareCanvas) {
+                    drawFooter();
+                    pdf.addPage();
+                    drawHeader();
+                    y = 54;
+                    sec('Tilastot · Vertailu' + storeLabel);
+                    y = await sliceCanvasIntoPdf(pdf, capture.compareCanvas, margin, contentW, y, pageH, drawHeader, drawFooter);
+                }
+            } else {
+                sec('Tilastot');
+                pdf.setFont('helvetica','italic');pdf.setFontSize(9);pdf.setTextColor(...GRAY);
+                pdf.text('Ei näytettäviä tilastoja — lataa ensin data Excelistä.', margin+4, y);
+                y += 8;
+            }
+        }
+
+        drawFooter();
         pdf.save(`tori-arvolaskuri-${today.replace(/\./g,'-')}.pdf`);
     } catch(err) {
         console.error(err); alert('PDF-vienti epäonnistui.');
