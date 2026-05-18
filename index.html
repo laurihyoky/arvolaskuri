@@ -127,6 +127,10 @@
 
         .date-filter { display: none; background: var(--blue-light); border: 1px solid #c7d9ff; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
         .date-filter .field { margin-bottom: 0; }
+        /* Datan rajaukseen liittyvät kentät (kauppa, päivämäärä) erottuvat sinisellä taustalla */
+        .data-source-field { background: var(--blue-light); border: 1px solid #c7d9ff; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+        .data-source-field label { color: var(--blue) !important; font-weight: 700 !important; }
+        .data-source-field select { background: white !important; }
 
         .cpc-stat { text-align: center; padding: 28px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; }
         .cpc-stat .big { font-size: 42px; font-weight: 800; color: var(--brand); letter-spacing: -2px; margin-bottom: 4px; }
@@ -137,6 +141,93 @@
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
 
         .hidden { display: none !important; }
+
+        /* Multi-select dropdown for stores */
+        .store-filter-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px 22px; box-shadow: var(--shadow); margin-bottom: 20px; display: none; }
+        .store-filter-card.active { display: block; }
+        .store-filter-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 16px; flex-wrap: wrap; }
+        .store-filter-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text3); }
+        .store-filter-count { font-size: 12px; font-weight: 600; color: var(--blue); background: var(--blue-light); padding: 3px 10px; border-radius: 20px; }
+
+        /* View toggle (Yhteenveto / Vertailu) */
+        .view-toggle { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; display: inline-flex; gap: 2px; }
+        .view-toggle button {
+            border: none; background: transparent; padding: 6px 14px; border-radius: 7px; cursor: pointer;
+            font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text2); transition: all 0.15s;
+        }
+        .view-toggle button.active { background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+        /* Period selector (3kk / 6kk / 12kk / Kaikki) */
+        .period-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .period-bar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .period-bar-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
+        .period-buttons { display: inline-flex; gap: 4px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+        .period-buttons button {
+            border: none; background: transparent; padding: 6px 14px; border-radius: 7px; cursor: pointer;
+            font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text2); transition: all 0.15s;
+        }
+        .period-buttons button:hover { color: var(--text); }
+        .period-buttons button.active { background: var(--brand); color: white; box-shadow: 0 1px 4px rgba(249,79,85,0.3); }
+        .period-range-text { font-size: 13px; font-weight: 600; color: var(--text2); }
+        .period-range-text strong { color: var(--text); font-weight: 700; }
+
+        /* KPI row for Yhteenveto-view */
+        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+        .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+        .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 6px; }
+        .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.8px; }
+        .kpi-sub { font-size: 12px; color: var(--text2); margin-top: 2px; font-weight: 500; }
+        @media (max-width: 800px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+        /* Small multiples grid for Vertailu-view */
+        .mini-grid { display: grid; gap: 16px; }
+        .mini-grid.cols-1 { grid-template-columns: 1fr; }
+        .mini-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .mini-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .mini-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }  /* 4 kpl 2x2-ruudukkoon */
+        @media (max-width: 900px) { .mini-grid.cols-2, .mini-grid.cols-3, .mini-grid.cols-4 { grid-template-columns: 1fr; } }
+        .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+        .mini-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .mini-header .color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .mini-header .title { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+        .mini-header .stat { font-size: 12px; color: var(--text2); font-weight: 600; }
+        .mini-chart-wrap { position: relative; height: 180px; }
+
+        .multi-select { position: relative; }
+        .multi-select-btn {
+            width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+            background: var(--surface2); cursor: pointer; font-family: 'DM Sans', sans-serif;
+            font-size: 14px; font-weight: 500; color: var(--text); text-align: left;
+            display: flex; justify-content: space-between; align-items: center; transition: all 0.15s;
+        }
+        .multi-select-btn:hover { border-color: var(--blue); }
+        .multi-select-btn.open { border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(0,94,255,0.08); }
+        .multi-select-arrow { transition: transform 0.2s; color: var(--text3); }
+        .multi-select-btn.open .multi-select-arrow { transform: rotate(180deg); }
+
+        .multi-select-panel {
+            display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+            background: white; border: 1.5px solid var(--border); border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(15,23,42,0.12); z-index: 50; max-height: 320px; overflow-y: auto;
+        }
+        .multi-select-panel.open { display: block; }
+        .multi-select-actions { display: flex; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); border-radius: 12px 12px 0 0; position: sticky; top: 0; }
+        .multi-select-action { font-size: 12px; font-weight: 600; color: var(--blue); background: transparent; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all 0.15s; }
+        .multi-select-action:hover { background: var(--blue-light); }
+
+        .multi-select-option {
+            display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+            cursor: pointer; transition: background 0.12s; font-size: 14px;
+        }
+        .multi-select-option:hover { background: var(--surface2); }
+        .multi-select-option input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--brand); cursor: pointer; }
+        .multi-select-option .color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .multi-select-option .label { flex: 1; font-weight: 500; }
+
+        /* Color palette indicators for legend */
+        .store-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+        .store-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text2); }
+        .store-legend-item .color-dot { width: 10px; height: 10px; border-radius: 50%; }
 
         #pdfOverlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 16px; color: white; font-weight: 600; font-size: 15px; backdrop-filter: blur(4px); }
         #pdfOverlay.show { display: flex; }
@@ -181,6 +272,10 @@
         <aside>
             <div class="card">
                 <div class="card-title">Nykytila & asetukset</div>
+                <div class="field roi-store-field data-source-field" id="roiStoreField" style="display:none;">
+                    <label>Kauppa</label>
+                    <select id="roiStoreSelect" onchange="onRoiStoreChange()"></select>
+                </div>
                 <div id="dateSelectorContainer" class="date-filter">
                     <div class="field-row">
                         <div class="field"><label>Vuosi</label><select id="yearSelect" onchange="updateMonthOptions()"></select></div>
@@ -250,6 +345,16 @@
         <aside>
             <div class="card">
                 <div class="card-title">CPC-asetukset</div>
+                <div class="field cpc-store-field data-source-field" id="cpcStoreField" style="display:none;">
+                    <label>Kauppa</label>
+                    <select id="cpcStoreSelect" onchange="onCpcStoreChange()"></select>
+                </div>
+                <div class="field cpc-date-field data-source-field" id="cpcDateField" style="display:none;">
+                    <div class="field-row" style="margin:0;">
+                        <div class="field" style="margin:0;"><label>Vuosi</label><select id="cpcYearSelect" onchange="updateCpcMonthOptions()"></select></div>
+                        <div class="field" style="margin:0;"><label>Kuukausi</label><select id="cpcMonthSelect" onchange="applyCpcFilteredData()"></select></div>
+                    </div>
+                </div>
                 <div class="field"><label>Katselukerrat (Klikkaukset) / kk</label><input type="number" id="cpcClicks" value="11000" oninput="calculateCPC()"></div>
                 <div class="field"><label>Valitse paketti</label><select id="cpcPkg" onchange="calculateCPC()"></select></div>
                 <div class="field"><label>Paketin hinta (€)</label><select id="cpcPrice" onchange="calculateCPC()"></select></div>
@@ -271,13 +376,91 @@
 <!-- TIMELINE TAB -->
 <div id="timeline-tab" class="tab-content">
     <div class="one-col">
-        <div class="card">
-            <div class="card-title">Liidien kehitys</div>
-            <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+        <div class="store-filter-card" id="storeFilterCard">
+            <div class="store-filter-header">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                    <div class="store-filter-title">Valitse kaupat</div>
+                    <div class="store-filter-count" id="storeFilterCount">0 / 0 valittu</div>
+                </div>
+                <div class="view-toggle">
+                    <button id="viewSummary" class="active" onclick="setTimelineView('summary')">Yhteenveto</button>
+                    <button id="viewCompare" onclick="setTimelineView('compare')">Vertailu</button>
+                </div>
+            </div>
+            <div class="multi-select">
+                <button class="multi-select-btn" id="storeMultiBtn" onclick="toggleStorePanel()">
+                    <span id="storeMultiLabel">Kaikki kaupat</span>
+                    <svg class="multi-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="multi-select-panel" id="storeMultiPanel">
+                    <div class="multi-select-actions">
+                        <button class="multi-select-action" onclick="selectAllStores(true)">Valitse kaikki</button>
+                        <button class="multi-select-action" onclick="selectAllStores(false)">Tyhjennä</button>
+                    </div>
+                    <div id="storeOptionsList"></div>
+                </div>
+            </div>
+            <div class="store-legend" id="storeLegend"></div>
         </div>
-        <div class="card">
-            <div class="card-title">Näkyvyys ja ilmoitusmäärä</div>
-            <div class="chart-wrap"><canvas id="chartViewsAds"></canvas></div>
+
+        <!-- AIKAJAKSO-VALITSIN -->
+        <div class="period-bar" id="periodBar" style="display:none;">
+            <div class="period-bar-left">
+                <span class="period-bar-label">Aikajakso</span>
+                <div class="period-buttons">
+                    <button data-months="3"  onclick="setPeriod(3)">3 kk</button>
+                    <button data-months="6"  onclick="setPeriod(6)">6 kk</button>
+                    <button data-months="12" onclick="setPeriod(12)">12 kk</button>
+                    <button data-months="0"  class="active" onclick="setPeriod(0)">Kaikki</button>
+                </div>
+            </div>
+            <div class="period-range-text" id="periodRangeText">–</div>
+        </div>
+
+        <!-- YHTEENVETO-NÄKYMÄ -->
+        <div id="summaryView">
+            <div class="kpi-row" id="kpiRow">
+                <div class="kpi-card">
+                    <div class="kpi-label">Kaupat</div>
+                    <div class="kpi-value" id="kpiStores">0</div>
+                    <div class="kpi-sub" id="kpiStoresSub">valittuna</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Liidit yhteensä</div>
+                    <div class="kpi-value" id="kpiLeads">0</div>
+                    <div class="kpi-sub" id="kpiLeadsSub">valitulta ajalta</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Klikkaukset yhteensä</div>
+                    <div class="kpi-value" id="kpiViews">0</div>
+                    <div class="kpi-sub" id="kpiViewsSub">katselukerrat</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Ilmoituksia keskim.</div>
+                    <div class="kpi-value" id="kpiAds">0</div>
+                    <div class="kpi-sub" id="kpiAdsSub">per kuukausi</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Liidien kehitys</div>
+                <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+            </div>
+            <div class="card" style="margin-top:20px;">
+                <div class="card-title">Klikkaukset ja ilmoitusmäärä</div>
+                <div class="chart-wrap"><canvas id="chartViewsAds"></canvas></div>
+            </div>
+        </div>
+
+        <!-- VERTAILU-NÄKYMÄ -->
+        <div id="compareView" style="display:none;">
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-title">Liidit per kauppa</div>
+                <div class="mini-grid" id="leadsMiniGrid"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Klikkaukset ja ilmoitusmäärä per kauppa</div>
+                <div class="mini-grid" id="viewsAdsMiniGrid"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -297,6 +480,29 @@ const PRICE_POINTS = [99,129,179,279,299,489,599];
 let uploadedData = [];
 let timeMultiplier = 1;
 let chartROI=null, chartCPC=null, chartTimeline=null, chartViewsAds=null;
+
+// Useamman kaupan tilanhallinta
+let availableStores = []; // [{id, name}]
+let selectedStoreIds = new Set();
+let timelineView = 'summary'; // 'summary' | 'compare'
+let miniCharts = []; // small multiples -instanssit
+let periodMonths = 0; // 0 = kaikki, muutoin viimeiset N kuukautta datan loppupäästä
+let activeStoreId = null; // valittu kauppa Arvolaskuri- ja CPC-välilehdillä ('__all__' = kaikki yhdistettynä)
+
+// Värit eri kaupoille (saavutettavia ja toisistaan erottuvia)
+const STORE_COLORS = [
+    '#f94f55', // Tori-punainen
+    '#005eff', // sininen
+    '#10b981', // vihreä
+    '#f59e0b', // oranssi
+    '#8b5cf6', // violetti
+    '#ec4899', // pinkki
+    '#14b8a6', // teal
+    '#f97316', // tumma oranssi
+    '#6366f1', // indigo
+    '#84cc16'  // limetti
+];
+const colorForStore = (idx) => STORE_COLORS[idx % STORE_COLORS.length];
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#64748b';
@@ -320,18 +526,56 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     reader.onload = function(e) {
         const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
         const rawJson = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-        let currentYear = "";
+
+        // Forward-fill: Excelissä yhdistetyt solut näkyvät vain ensimmäisellä rivillä,
+        // joten täytetään tyhjät kentät edelliseltä riviltä (kauppa, vuosi).
+        let currentStoreId = "", currentStoreName = "", currentYear = "";
         uploadedData = rawJson.map(row => {
+            if (row["Aurora Organisation Id"]) currentStoreId = String(row["Aurora Organisation Id"]);
+            else row["Aurora Organisation Id"] = currentStoreId;
+
+            if (row["Display Name"]) currentStoreName = row["Display Name"];
+            else row["Display Name"] = currentStoreName;
+
             if (row["Year of Event Date"]) currentYear = row["Year of Event Date"];
             else row["Year of Event Date"] = currentYear;
+
             return row;
+        }).filter(r => r["Display Name"]); // suodata pois tyhjät rivit
+
+        // Kerätään uniikit kaupat
+        const storeMap = new Map();
+        uploadedData.forEach(r => {
+            const id = String(r["Aurora Organisation Id"] || r["Display Name"]);
+            if (!storeMap.has(id)) storeMap.set(id, { id, name: r["Display Name"] });
         });
+        availableStores = [...storeMap.values()];
+        selectedStoreIds = new Set(availableStores.map(s => s.id)); // kaikki valittuna oletuksena
+
+        // Rakenna multi-select dropdown
+        renderStoreOptions();
+
+        // Vuosi/kuukausi-suodattimet käyttävät kaikkia kauppoja yhdistettyinä
         const years = [...new Set(uploadedData.map(r=>String(r["Year of Event Date"])))].filter(y=>y).sort((a,b)=>b-a);
         const ySelect = document.getElementById('yearSelect');
         ySelect.innerHTML = "";
         years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
+
+        // CPC-välilehden oma vuosi/kuukausi
+        const cpcYSelect = document.getElementById('cpcYearSelect');
+        cpcYSelect.innerHTML = "";
+        years.forEach(y => cpcYSelect.innerHTML += `<option value="${y}">${y}</option>`);
+
+        // Renderöidään Arvolaskuri- ja CPC-välilehtien kauppavalitsimet
+        renderActiveStoreSelectors();
+
         document.getElementById('dateSelectorContainer').style.display = "block";
+        document.getElementById('cpcDateField').style.display = "block";
+        document.getElementById('storeFilterCard').classList.add('active');
+        document.getElementById('periodBar').style.display = 'flex';
         updateMonthOptions();
+        updateCpcMonthOptions();
+        updatePeriodRangeText();
         updateTimelineCharts();
     };
     reader.readAsArrayBuffer(e.target.files[0]);
@@ -341,7 +585,66 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
 const dataLabelsPlugin = {
     id: 'dataLabels',
     afterDatasetsDraw(chart) {
+        // Mini-kuvaajat (Vertailu-näkymä) ohittavat numerot kokonaan — käytä tooltippejä
+        if (chart.options._skipLabels) return;
+
         const ctx = chart.ctx;
+        const insideMode = !!chart.options._insideBarLabels;
+        const miniMode   = !!chart.options._miniLabels;
+
+        // _miniLabels-tila: pienet numerot palkkien yläpuolella (Vertailu-näkymän liidit-kuvaajat)
+        if (miniMode) {
+            chart.data.datasets.forEach((ds, i) => {
+                const meta = chart.getDatasetMeta(i);
+                if (meta.hidden) return;
+                const isLine = ds.type === 'line' || meta.type === 'line';
+                if (isLine) return;
+                meta.data.forEach((el, j) => {
+                    const val = ds.data[j];
+                    if (val == null || val === 0) return;
+                    const label = Math.round(val).toLocaleString('fi-FI');
+                    ctx.save();
+                    ctx.font = '600 9px "DM Sans", sans-serif';
+                    ctx.fillStyle = '#475569';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(label, el.x, el.y - 3);
+                    ctx.restore();
+                });
+            });
+            return;
+        }
+
+        // _insideBarLabels-tila: piirrä tekstit VAIN palkkien sisälle, ohita kaikki viivat
+        if (insideMode) {
+            chart.data.datasets.forEach((ds, i) => {
+                const meta = chart.getDatasetMeta(i);
+                if (meta.hidden) return;
+                const isLine = ds.type === 'line' || meta.type === 'line';
+                if (isLine) return; // ohitetaan viivapisteet kokonaan
+                meta.data.forEach((el, j) => {
+                    const val = ds.data[j];
+                    if (val == null || val === 0) return;
+                    // Älä piirrä jos palkki on liian matala tekstille (vähintään ~20px)
+                    const barHeight = Math.abs(el.base - el.y);
+                    if (barHeight < 20) return;
+                    const label = Math.round(val).toLocaleString('fi-FI');
+                    ctx.save();
+                    ctx.font = '600 9px "DM Sans", sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(label, el.x, el.y + 5);
+                    ctx.restore();
+                });
+            });
+            return;
+        }
+
+        // Skipataan jos kuvaajassa on monta dataset-palkkia (grouped bar), niin numerot eivät mene päällekkäin
+        const barDatasets = chart.data.datasets.filter(d => (d.type || chart.config.type) === 'bar');
+        if (barDatasets.length > 2) return;
+
         chart.data.datasets.forEach((ds, i) => {
             const meta = chart.getDatasetMeta(i);
             if (meta.hidden) return;
@@ -367,69 +670,505 @@ const dataLabelsPlugin = {
 };
 Chart.register(dataLabelsPlugin);
 
+// ─── MULTI-SELECT STORE FILTER ───────────────────────────────────────────────
+function renderStoreOptions() {
+    const list = document.getElementById('storeOptionsList');
+    list.innerHTML = '';
+    availableStores.forEach((store, idx) => {
+        const checked = selectedStoreIds.has(store.id) ? 'checked' : '';
+        list.innerHTML += `
+            <label class="multi-select-option">
+                <input type="checkbox" value="${store.id}" ${checked} onchange="onStoreToggle('${store.id}', this.checked)">
+                <span class="color-dot" style="background:${colorForStore(idx)}"></span>
+                <span class="label">${store.name}</span>
+            </label>`;
+    });
+    updateStoreFilterUI();
+}
+
+function onStoreToggle(id, checked) {
+    if (checked) selectedStoreIds.add(id);
+    else selectedStoreIds.delete(id);
+    updateStoreFilterUI();
+    updateTimelineCharts();
+}
+
+function selectAllStores(all) {
+    selectedStoreIds = all ? new Set(availableStores.map(s => s.id)) : new Set();
+    document.querySelectorAll('#storeOptionsList input[type="checkbox"]').forEach(cb => {
+        cb.checked = selectedStoreIds.has(cb.value);
+    });
+    updateStoreFilterUI();
+    updateTimelineCharts();
+}
+
+function toggleStorePanel() {
+    document.getElementById('storeMultiBtn').classList.toggle('open');
+    document.getElementById('storeMultiPanel').classList.toggle('open');
+}
+
+// Sulje paneeli kun klikataan ulkopuolelle
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.multi-select')) {
+        document.getElementById('storeMultiBtn')?.classList.remove('open');
+        document.getElementById('storeMultiPanel')?.classList.remove('open');
+    }
+});
+
+function updateStoreFilterUI() {
+    const count = selectedStoreIds.size;
+    const total = availableStores.length;
+    document.getElementById('storeFilterCount').textContent = `${count} / ${total} valittu`;
+
+    const label = document.getElementById('storeMultiLabel');
+    if (count === 0)         label.textContent = 'Ei valittuja kauppoja';
+    else if (count === total) label.textContent = `Kaikki kaupat (${total})`;
+    else if (count === 1) {
+        const id = [...selectedStoreIds][0];
+        label.textContent = availableStores.find(s => s.id === id)?.name || '';
+    } else label.textContent = `${count} kauppaa valittu`;
+
+    // Selitelista valituista
+    const legend = document.getElementById('storeLegend');
+    legend.innerHTML = '';
+    availableStores.forEach((store, idx) => {
+        if (selectedStoreIds.has(store.id)) {
+            legend.innerHTML += `<div class="store-legend-item"><span class="color-dot" style="background:${colorForStore(idx)}"></span>${store.name}</div>`;
+        }
+    });
+}
+
+// Apufunktio: kerää rivit jotka kuuluvat valituille kaupoille, ryhmiteltynä kauppoittain
+function getSelectedStoresData() {
+    return availableStores
+        .map((store, idx) => ({
+            ...store,
+            color: colorForStore(idx),
+            rows: uploadedData.filter(r => String(r["Aurora Organisation Id"]) === store.id)
+        }))
+        .filter(s => selectedStoreIds.has(s.id));
+}
+
+// Apufunktio: kaikki uniikit "Kuukausi Vuosi"-leimat aikajärjestyksessä
+const FI_MONTHS = ['tammikuu','helmikuu','maaliskuu','huhtikuu','toukokuu','kesäkuu','heinäkuu','elokuu','syyskuu','lokakuu','marraskuu','joulukuu'];
+function getAllMonthLabels() {
+    const set = new Set();
+    uploadedData.forEach(r => {
+        const m = r["Month of Event Date"], y = r["Year of Event Date"];
+        if (m && y) set.add(`${m}|${y}`);
+    });
+    const all = [...set].sort((a,b) => {
+        const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
+        if (ya !== yb) return Number(ya) - Number(yb);
+        return FI_MONTHS.indexOf(ma) - FI_MONTHS.indexOf(mb);
+    }).map(k => {
+        const [m,y] = k.split('|');
+        return { key: k, label: `${m} ${y}`, month: m, year: y };
+    });
+
+    // Rajaa valittuun jaksoon (laskien taaksepäin datan viimeisestä kuukaudesta)
+    if (periodMonths > 0 && all.length > periodMonths) {
+        return all.slice(-periodMonths);
+    }
+    return all;
+}
+
+// ─── AIKAJAKSON VALITSIN ─────────────────────────────────────────────────────
+function setPeriod(months) {
+    periodMonths = months;
+    document.querySelectorAll('.period-buttons button').forEach(b => {
+        b.classList.toggle('active', Number(b.dataset.months) === months);
+    });
+    updatePeriodRangeText();
+    updateTimelineCharts();
+}
+
+function updatePeriodRangeText() {
+    const months = getAllMonthLabels();
+    const txt = document.getElementById('periodRangeText');
+    if (!months.length) { txt.textContent = '–'; return; }
+    const first = months[0], last = months[months.length-1];
+    const count = months.length;
+    if (count === 1) {
+        txt.innerHTML = `<strong>${first.label}</strong> (1 kk)`;
+    } else {
+        txt.innerHTML = `<strong>${first.label}</strong> – <strong>${last.label}</strong> (${count} kk)`;
+    }
+}
+
 function updateTimelineCharts() {
     if (!uploadedData.length) return;
-    const labels = uploadedData.map(r=>`${r["Month of Event Date"]} ${r["Year of Event Date"]}`);
-    const leadsVals = uploadedData.map(r=>
-        (parseFloat(r["N Conversation Start"])||0)+
-        (parseFloat(r["N Homepage Link Clicked"])||0)+
-        (parseFloat(r["N Phone Leads"])||0)
-    );
+    if (timelineView === 'summary') renderSummaryView();
+    else renderCompareView();
+}
 
-    if (chartTimeline) {
-        chartTimeline.data.labels = labels;
-        chartTimeline.data.datasets[0].data = leadsVals;
-        chartTimeline.update('active');
-    } else {
-        chartTimeline = new Chart(document.getElementById('chartTimeline'),{
-            type:'bar',
-            data:{ labels, datasets:[{ label:'Liidit', data:leadsVals, backgroundColor:'rgba(249,79,85,0.82)', borderRadius:6, borderSkipped:false }] },
-            options:{
-                responsive:true, maintainAspectRatio:false,
-                animation:{ duration:600, easing:'easeInOutQuart' },
-                plugins:{ legend:{display:false} },
-                scales:{
-                    x:{ grid:{display:false}, ticks:{maxRotation:45} },
-                    y:{ grid:{color:'#f1f5f9'}, beginAtZero:true }
-                },
-                layout:{ padding:{ top:22 } }
-            }
+// ─── YHTEENVETO-NÄKYMÄ ───────────────────────────────────────────────────────
+function renderSummaryView() {
+    const stores = getSelectedStoresData();
+    const monthList = getAllMonthLabels();
+    const labels = monthList.map(m => m.label);
+
+    // Apufunktio: hakee tietyn kuukauden rivin kaupalta
+    const findRow = (s, m) => s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+
+    // KPI:t — lasketaan VAIN valitulle aikajaksolle
+    let totalLeads = 0, totalViews = 0, totalAds = 0, monthsWithData = 0;
+    stores.forEach(s => {
+        monthList.forEach(m => {
+            const row = findRow(s, m);
+            if (!row) return;
+            totalLeads += (parseFloat(row["N Conversation Start"])||0)
+                       + (parseFloat(row["N Homepage Link Clicked"])||0)
+                       + (parseFloat(row["N Phone Leads"])||0);
+            totalViews += parseFloat(row["N Ad Views"])||0;
+            totalAds   += parseFloat(row["N Ads"])||0;
+            monthsWithData++;
         });
-    }
+    });
+    const avgAdsPerMonth = monthsWithData > 0 ? Math.round(totalAds / monthsWithData) : 0;
 
-    const adsVals   = uploadedData.map(r=>parseFloat(r["N Ads"])||0);
-    const viewsVals = uploadedData.map(r=>parseFloat(r["N Ad Views"])||0);
+    // KPI-alaotsikon teksti riippuu jaksosta
+    const periodSub = periodMonths === 0 ? 'koko ajalta'
+                    : periodMonths === 1 ? 'viim. kuukausi'
+                    : `viim. ${periodMonths} kk`;
 
-    if (chartViewsAds) {
-        chartViewsAds.data.labels = labels;
-        chartViewsAds.data.datasets[0].data = adsVals;
-        chartViewsAds.data.datasets[1].data = viewsVals;
-        chartViewsAds.update('active');
-    } else {
-        chartViewsAds = new Chart(document.getElementById('chartViewsAds'),{
-            type:'bar',
-            data:{ labels, datasets:[
-                { label:'Ilmoitusmäärä', data:adsVals, backgroundColor:'rgba(0,94,255,0.72)', borderRadius:6, borderSkipped:false, yAxisID:'y' },
-                { label:'Klikkaukset', data:viewsVals, type:'line', borderColor:'#f94f55', backgroundColor:'rgba(249,79,85,0.1)', borderWidth:2.5, pointBackgroundColor:'#f94f55', pointRadius:4, fill:false, tension:0.3, yAxisID:'y2' }
-            ]},
-            options:{
-                responsive:true, maintainAspectRatio:false,
-                animation:{ duration:600, easing:'easeInOutQuart' },
-                plugins:{ legend:{position:'bottom'} },
-                scales:{
-                    x:{ grid:{display:false}, ticks:{maxRotation:45} },
-                    y:{ grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Ilmoitukset (kpl)'} },
-                    y2:{ grid:{display:false}, beginAtZero:true, position:'right', title:{display:true, text:'Klikkaukset'} }
-                },
-                layout:{ padding:{ top:22 } }
-            }
+    document.getElementById('kpiStores').textContent = stores.length;
+    document.getElementById('kpiStoresSub').textContent = stores.length === 1 ? 'valittuna' : 'valittuna';
+    document.getElementById('kpiLeads').textContent = Math.round(totalLeads).toLocaleString('fi-FI');
+    document.getElementById('kpiLeadsSub').textContent = periodSub;
+    document.getElementById('kpiViews').textContent = Math.round(totalViews).toLocaleString('fi-FI');
+    document.getElementById('kpiViewsSub').textContent = periodSub;
+    document.getElementById('kpiAds').textContent = avgAdsPerMonth.toLocaleString('fi-FI');
+    document.getElementById('kpiAdsSub').textContent = 'per kuukausi';
+
+    // Liidit-kuvaaja: pinotut palkit kuukausittain
+    const leadsDatasets = stores.map(s => ({
+        label: s.name,
+        data: monthList.map(m => {
+            const row = findRow(s, m);
+            if (!row) return 0;
+            return (parseFloat(row["N Conversation Start"])||0)
+                 + (parseFloat(row["N Homepage Link Clicked"])||0)
+                 + (parseFloat(row["N Phone Leads"])||0);
+        }),
+        backgroundColor: s.color,
+        borderRadius: 4,
+        borderSkipped: false,
+        stack: 'leads'
+    }));
+
+    if (chartTimeline) chartTimeline.destroy();
+    chartTimeline = new Chart(document.getElementById('chartTimeline'),{
+        type:'bar',
+        data:{ labels, datasets: leadsDatasets },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            animation:{ duration:500, easing:'easeInOutQuart' },
+            plugins:{
+                legend:{ position:'bottom', labels:{ font:{ weight:'600' }, padding:14, usePointStyle:true, pointStyle:'circle' } },
+                tooltip:{
+                    callbacks:{
+                        label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('fi-FI')} liidiä`,
+                        footer: items => {
+                            const total = items.reduce((s,i)=>s+i.parsed.y, 0);
+                            return 'Yhteensä: ' + Math.round(total).toLocaleString('fi-FI') + ' liidiä';
+                        }
+                    }
+                }
+            },
+            scales:{
+                x:{ stacked:true, grid:{display:false}, ticks:{maxRotation:45} },
+                y:{ stacked:true, grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Liidit (kpl)'} }
+            },
+            layout:{ padding:{ top:22 } }
+        }
+    });
+
+    // Klikkaukset-kuvaaja: pinotut palkit (klikkaukset) + viiva (ilmoitukset yhteensä)
+    const viewsDatasets = stores.map(s => ({
+        label: s.name,
+        data: monthList.map(m => {
+            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+            return row ? (parseFloat(row["N Ad Views"])||0) : 0;
+        }),
+        backgroundColor: s.color,
+        borderRadius: 4,
+        borderSkipped: false,
+        stack: 'views',
+        yAxisID: 'y'
+    }));
+
+    // Ilmoitukset yhteensä viivana
+    const totalAdsLine = monthList.map(m => {
+        let sum = 0;
+        stores.forEach(s => {
+            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+            if (row) sum += parseFloat(row["N Ads"])||0;
         });
-    }
+        return sum;
+    });
+    viewsDatasets.push({
+        label: 'Ilmoituksia yhteensä',
+        data: totalAdsLine,
+        type: 'line',
+        borderColor: '#0f172a',
+        backgroundColor: 'rgba(15,23,42,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#0f172a',
+        pointRadius: 3.5,
+        fill: false,
+        tension: 0.3,
+        yAxisID: 'y2',
+        stack: undefined
+    });
+
+    if (chartViewsAds) chartViewsAds.destroy();
+    chartViewsAds = new Chart(document.getElementById('chartViewsAds'),{
+        type:'bar',
+        data:{ labels, datasets: viewsDatasets },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            animation:{ duration:500, easing:'easeInOutQuart' },
+            plugins:{
+                legend:{ position:'bottom', labels:{ font:{ size:11, weight:'600' }, padding:10, usePointStyle:true, pointStyle:'circle' } },
+                tooltip:{ callbacks:{ label:ctx=>`${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('fi-FI')}` }}
+            },
+            scales:{
+                x:{ stacked:true, grid:{display:false}, ticks:{maxRotation:45} },
+                y:{ stacked:true, grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Klikkaukset'} },
+                y2:{ grid:{display:false}, beginAtZero:true, position:'right', title:{display:true, text:'Ilmoitukset (kpl)'} }
+            },
+            layout:{ padding:{ top:22 } }
+        }
+    });
+}
+
+// ─── VERTAILU-NÄKYMÄ (small multiples) ───────────────────────────────────────
+function renderCompareView() {
+    const stores = getSelectedStoresData();
+    const monthList = getAllMonthLabels();
+    const labels = monthList.map(m => m.label);
+
+    // Tuhotaan vanhat mini-chartit
+    miniCharts.forEach(c => c.destroy());
+    miniCharts = [];
+
+    // Yhteinen y-maksimi kullekin metriikalle, jotta vertailu on reilu
+    let leadsMax = 0, viewsMax = 0, adsMax = 0;
+    const storeMetrics = stores.map(s => {
+        const leadsData = monthList.map(m => {
+            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+            if (!row) return 0;
+            return (parseFloat(row["N Conversation Start"])||0)
+                 + (parseFloat(row["N Homepage Link Clicked"])||0)
+                 + (parseFloat(row["N Phone Leads"])||0);
+        });
+        const viewsData = monthList.map(m => {
+            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+            return row ? (parseFloat(row["N Ad Views"])||0) : 0;
+        });
+        const adsData = monthList.map(m => {
+            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+            return row ? (parseFloat(row["N Ads"])||0) : 0;
+        });
+        leadsMax = Math.max(leadsMax, ...leadsData);
+        viewsMax = Math.max(viewsMax, ...viewsData);
+        adsMax   = Math.max(adsMax,   ...adsData);
+        return {
+            ...s,
+            leadsData, viewsData, adsData,
+            leadsTotal: leadsData.reduce((a,b)=>a+b, 0),
+            viewsTotal: viewsData.reduce((a,b)=>a+b, 0),
+            adsAvg:     adsData.length ? Math.round(adsData.reduce((a,b)=>a+b, 0) / adsData.length) : 0
+        };
+    });
+
+    // Sarakkeiden määrä gridissä riippuu valittujen kauppojen määrästä
+    const gridCols = stores.length === 1 ? 1 : (stores.length === 2 ? 2 : (stores.length === 3 ? 3 : 4));
+    const leadsGrid    = document.getElementById('leadsMiniGrid');
+    const viewsAdsGrid = document.getElementById('viewsAdsMiniGrid');
+    leadsGrid.className    = 'mini-grid cols-' + gridCols;
+    viewsAdsGrid.className = 'mini-grid cols-' + gridCols;
+    leadsGrid.innerHTML    = '';
+    viewsAdsGrid.innerHTML = '';
+
+    storeMetrics.forEach((s, idx) => {
+        // Liidit-mini-kortti (oma rivi)
+        leadsGrid.innerHTML += `
+            <div class="mini-card">
+                <div class="mini-header">
+                    <span class="color-dot" style="background:${s.color}"></span>
+                    <span class="title">${s.name}</span>
+                    <span class="stat">${Math.round(s.leadsTotal).toLocaleString('fi-FI')} liidiä</span>
+                </div>
+                <div class="mini-chart-wrap"><canvas id="miniLeads-${idx}"></canvas></div>
+            </div>`;
+        // Klikkaukset (palkki) + ilmoitukset (viiva) yhdessä kuvaajassa
+        viewsAdsGrid.innerHTML += `
+            <div class="mini-card">
+                <div class="mini-header">
+                    <span class="color-dot" style="background:${s.color}"></span>
+                    <span class="title">${s.name}</span>
+                    <span class="stat">${Math.round(s.viewsTotal).toLocaleString('fi-FI')} klikkausta · ${s.adsAvg} ilm. / kk</span>
+                </div>
+                <div class="mini-chart-wrap"><canvas id="miniViewsAds-${idx}"></canvas></div>
+            </div>`;
+    });
+
+    // Luodaan mini-chartit innerHTML:n jälkeen
+    storeMetrics.forEach((s, idx) => {
+        // Liidit-kuvaaja: yksinkertainen palkki, numerot palkkien päällä
+        miniCharts.push(new Chart(document.getElementById('miniLeads-'+idx), {
+            type:'bar',
+            data:{ labels, datasets:[{ data: s.leadsData, backgroundColor: s.color, borderRadius: 3 }] },
+            options:{
+                _miniLabels: true,
+                responsive:true, maintainAspectRatio:false,
+                animation:{ duration:400 },
+                plugins:{
+                    legend:{ display:false },
+                    tooltip:{ callbacks:{ label:ctx=>`${Math.round(ctx.parsed.y).toLocaleString('fi-FI')} liidiä` }}
+                },
+                scales:{
+                    x:{ grid:{display:false}, ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:8 } },
+                    y:{ grid:{color:'#f1f5f9'}, beginAtZero:true, suggestedMax: leadsMax * 1.15, ticks:{ font:{size:9} } }
+                },
+                layout:{ padding:{ top:14 } }
+            }
+        }));
+
+        // Klikkaukset (palkki) + ilmoitukset (viiva) samassa kuvaajassa, kaksi y-akselia
+        miniCharts.push(new Chart(document.getElementById('miniViewsAds-'+idx), {
+            type:'bar',
+            data:{
+                labels,
+                datasets:[
+                    {
+                        label: 'Klikkaukset',
+                        data: s.viewsData,
+                        backgroundColor: s.color,
+                        borderRadius: 3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Ilmoitukset',
+                        data: s.adsData,
+                        type: 'line',
+                        borderColor: '#0f172a',
+                        backgroundColor: 'rgba(15,23,42,0.08)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#0f172a',
+                        pointRadius: 2.5,
+                        fill: false,
+                        tension: 0.3,
+                        yAxisID: 'y2'
+                    }
+                ]
+            },
+            options:{
+                _insideBarLabels: true,
+                responsive:true, maintainAspectRatio:false,
+                animation:{ duration:400 },
+                plugins:{
+                    legend:{ display:false },
+                    tooltip:{
+                        callbacks:{
+                            label: ctx => ctx.dataset.label === 'Klikkaukset'
+                                ? `${Math.round(ctx.parsed.y).toLocaleString('fi-FI')} klikkausta`
+                                : `${Math.round(ctx.parsed.y).toLocaleString('fi-FI')} ilmoitusta`
+                        }
+                    }
+                },
+                scales:{
+                    x:{ grid:{display:false}, ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:8 } },
+                    y:{  grid:{color:'#f1f5f9'}, beginAtZero:true, suggestedMax: viewsMax * 1.1, ticks:{ font:{size:9} }, title:{display:false} },
+                    y2:{ grid:{display:false}, beginAtZero:true, position:'right', suggestedMax: adsMax * 1.15, ticks:{ font:{size:9} }, title:{display:false} }
+                },
+                layout:{ padding:{ top:8 } }
+            }
+        }));
+    });
+}
+
+// ─── NÄKYMÄN VAIHTO ──────────────────────────────────────────────────────────
+function setTimelineView(view) {
+    timelineView = view;
+    document.getElementById('viewSummary').classList.toggle('active', view === 'summary');
+    document.getElementById('viewCompare').classList.toggle('active', view === 'compare');
+    document.getElementById('summaryView').style.display = view === 'summary' ? 'block' : 'none';
+    document.getElementById('compareView').style.display = view === 'compare' ? 'block' : 'none';
+    updateTimelineCharts();
+}
+
+// ─── KAUPPAVALITSIN ARVOLASKURI- JA CPC-VÄLILEHDILLÄ ─────────────────────────
+// Renderöi molempien välilehtien kauppavalitsimet uniikeista kaupoista.
+// Asettaa myös ensimmäisen kaupan oletukseksi jos useita on ladattu.
+function renderActiveStoreSelectors() {
+    const roiSel = document.getElementById('roiStoreSelect');
+    const cpcSel = document.getElementById('cpcStoreSelect');
+    if (!roiSel || !cpcSel || !availableStores.length) return;
+
+    // Rakennetaan optiot: yksi per kauppa + "Kaikki yhdistettynä" jos kauppoja on >1
+    const buildOptions = () => {
+        let html = '';
+        availableStores.forEach(s => { html += `<option value="${s.id}">${s.name}</option>`; });
+        if (availableStores.length > 1) html += `<option value="__all__">Kaikki kaupat yhdistettynä</option>`;
+        return html;
+    };
+    roiSel.innerHTML = buildOptions();
+    cpcSel.innerHTML = buildOptions();
+
+    // Oletus: ensimmäinen kauppa
+    activeStoreId = availableStores[0].id;
+    roiSel.value = activeStoreId;
+    cpcSel.value = activeStoreId;
+
+    // Näytetään valitsimet vain jos kauppoja on enemmän kuin yksi
+    const show = availableStores.length > 1;
+    document.getElementById('roiStoreField').style.display = show ? 'block' : 'none';
+    document.getElementById('cpcStoreField').style.display = show ? 'block' : 'none';
+}
+
+function onRoiStoreChange() {
+    activeStoreId = document.getElementById('roiStoreSelect').value;
+    // Synkronoidaan myös CPC-välilehden valinta jos sama kauppa on käytettävissä
+    const cpcSel = document.getElementById('cpcStoreSelect');
+    if (cpcSel && [...cpcSel.options].some(o => o.value === activeStoreId)) cpcSel.value = activeStoreId;
+    updateMonthOptions(); // päivittää myös kuukausilistauksen valitulle kaupalle
+}
+
+function onCpcStoreChange() {
+    activeStoreId = document.getElementById('cpcStoreSelect').value;
+    // Synkronoidaan myös ROI-välilehti
+    const roiSel = document.getElementById('roiStoreSelect');
+    if (roiSel && [...roiSel.options].some(o => o.value === activeStoreId)) roiSel.value = activeStoreId;
+    updateCpcMonthOptions();
+}
+
+// Palauttaa rivit jotka kuuluvat aktiiviseen valintaan (yksi kauppa tai kaikki yhdistettynä)
+function getActiveRows() {
+    if (!activeStoreId || activeStoreId === '__all__') return uploadedData;
+    return uploadedData.filter(r => String(r["Aurora Organisation Id"]) === activeStoreId);
+}
+
+// Aggregoi kaupan rivit kuukaudessa yhdeksi: jos useita kauppoja ('__all__'), summataan
+function aggregateMonthRow(year, month) {
+    const rows = getActiveRows().filter(r => String(r["Year of Event Date"]) === year && r["Month of Event Date"] === month);
+    if (!rows.length) return null;
+    const sum = (key) => rows.reduce((acc, r) => acc + (parseFloat(r[key]) || 0), 0);
+    return {
+        "N Ads":                 sum("N Ads"),
+        "N Ad Views":            sum("N Ad Views"),
+        "N Conversation Start":  sum("N Conversation Start"),
+        "N Homepage Link Clicked": sum("N Homepage Link Clicked"),
+        "N Phone Leads":         sum("N Phone Leads")
+    };
 }
 
 function updateMonthOptions() {
     const year = document.getElementById('yearSelect').value;
-    const months = [...new Set(uploadedData.filter(r=>String(r["Year of Event Date"])===year).map(r=>r["Month of Event Date"]))].filter(Boolean);
+    const rows = getActiveRows().filter(r => String(r["Year of Event Date"]) === year);
+    const months = [...new Set(rows.map(r => r["Month of Event Date"]))].filter(Boolean);
     const mSelect = document.getElementById('monthSelect');
     mSelect.innerHTML = "";
     months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
@@ -439,13 +1178,33 @@ function updateMonthOptions() {
 function applyFilteredData() {
     const year  = document.getElementById('yearSelect').value;
     const month = document.getElementById('monthSelect').value;
-    const row   = uploadedData.find(r=>String(r["Year of Event Date"])===year && r["Month of Event Date"]===month);
+    const row   = aggregateMonthRow(year, month);
     if (row) {
         document.getElementById('totalAds').value  = row["N Ads"]||0;
-        document.getElementById('cpcClicks').value = row["N Ad Views"]||0;
-        const sum = (parseFloat(row["N Conversation Start"])||0)+(parseFloat(row["N Homepage Link Clicked"])||0)+(parseFloat(row["N Phone Leads"])||0);
+        const sum = (row["N Conversation Start"]||0) + (row["N Homepage Link Clicked"]||0) + (row["N Phone Leads"]||0);
         document.getElementById('leadsA').value = Math.round(sum);
-        calculate(true); calculateCPC();
+        calculate(true);
+    }
+}
+
+// CPC-välilehden suodatusfunktiot (oma vuosi/kuukausi-valitsin)
+function updateCpcMonthOptions() {
+    const year = document.getElementById('cpcYearSelect').value;
+    const rows = getActiveRows().filter(r => String(r["Year of Event Date"]) === year);
+    const months = [...new Set(rows.map(r => r["Month of Event Date"]))].filter(Boolean);
+    const mSelect = document.getElementById('cpcMonthSelect');
+    mSelect.innerHTML = "";
+    months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
+    applyCpcFilteredData();
+}
+
+function applyCpcFilteredData() {
+    const year  = document.getElementById('cpcYearSelect').value;
+    const month = document.getElementById('cpcMonthSelect').value;
+    const row   = aggregateMonthRow(year, month);
+    if (row) {
+        document.getElementById('cpcClicks').value = row["N Ad Views"]||0;
+        calculateCPC();
     }
 }
 
