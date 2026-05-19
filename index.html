@@ -142,6 +142,13 @@
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
 
         .hidden { display: none !important; }
+        .proposal-hint {
+            margin-top: 12px; padding: 10px 12px;
+            background: rgba(249, 79, 85, 0.08);
+            border: 1px solid rgba(249, 79, 85, 0.25);
+            border-radius: 8px;
+            font-size: 12px; line-height: 1.45; color: var(--text2); font-weight: 500;
+        }
 
         /* Multi-select dropdown for stores */
         .store-filter-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px 22px; box-shadow: var(--shadow); margin-bottom: 20px; display: none; }
@@ -502,6 +509,9 @@
                     <div class="stat-label"><span class="stat-dot red"></span>Ehdotettu tuotto (<span class="time-label">kk</span>)</div>
                     <div class="stat-val" id="uiRevB">0 €</div>
                     <div class="roi-badge" id="uiRoiB">ROI: 0%</div>
+                    <div class="proposal-hint hidden" id="proposalHint">
+                        Nykyinen paketti riittää jo kaikkien ilmoitustesi tähdittämiseen — <span id="proposalHintPkg">päivitys</span> ei mallin mukaan kasvata liidejä, ellei ilmoitusmäärää lisätä.
+                    </div>
                 </div>
             </div>
             <div class="card chart-card">
@@ -1948,6 +1958,23 @@ function calculate(autoUpdateLeads) {
         const pkgB=PACKAGES[document.getElementById('pkgB').selectedIndex];
         const sB=Math.min(pkgB.stars,n);
         document.getElementById('leadsB_manual').value=Math.round(v*(n+M*sB));
+    }
+
+    // Vihje: nykyinen paketti riittää jo kaikkien ilmoitusten tähdittämiseen,
+    // jolloin mikään upgrade ei mallin mukaan kasvata liidejä (sB = sA = n).
+    const hint = document.getElementById('proposalHint');
+    if (hint) {
+        const pkgA_obj = PACKAGES[document.getElementById('pkgA').selectedIndex];
+        const pkgB_obj = PACKAGES[document.getElementById('pkgB').selectedIndex];
+        const nRaw = parseFloat(document.getElementById('totalAds').value);
+        const nValid = Number.isFinite(nRaw) && nRaw > 0;
+        const saturated = showProp && nValid && pkgA_obj && pkgB_obj
+            && nRaw <= pkgA_obj.stars && pkgB_obj.stars > pkgA_obj.stars;
+        hint.classList.toggle('hidden', !saturated);
+        if (saturated) {
+            const pkgSpan = document.getElementById('proposalHintPkg');
+            if (pkgSpan) pkgSpan.textContent = pkgB_obj.name;
+        }
     }
 
     const leadsB=parseFloat(document.getElementById('leadsB_manual').value)||0;
