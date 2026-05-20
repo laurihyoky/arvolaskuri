@@ -142,6 +142,9 @@
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
 
         .hidden { display: none !important; }
+        .card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
+        .chart-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; user-select: none; }
+        .chart-toggle input { cursor: pointer; accent-color: var(--brand); }
         .proposal-hint {
             margin-top: 12px; padding: 10px 12px;
             background: rgba(249, 79, 85, 0.08);
@@ -698,7 +701,13 @@
                 <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
             </div>
             <div class="card" style="margin-top:20px;">
-                <div class="card-title">Klikkaukset ja ilmoitusmäärä</div>
+                <div class="card-title-row">
+                    <div class="card-title" id="viewsAdsTitle">Klikkaukset ja ilmoitusmäärä</div>
+                    <label class="chart-toggle" title="Näytä tai piilota ilmoitusmääräviiva">
+                        <input type="checkbox" id="showAdsLineToggle" checked onchange="onToggleAdsLine(this.checked)">
+                        <span>Näytä ilmoitusmäärä</span>
+                    </label>
+                </div>
                 <div class="chart-wrap"><canvas id="chartViewsAds"></canvas></div>
             </div>
         </div>
@@ -740,6 +749,7 @@ let availableStores = []; // [{id, name}]
 let selectedStoreIds = new Set();
 let timelineView = 'summary'; // 'summary' | 'compare'
 let miniCharts = []; // small multiples -instanssit
+let hideAdsLine = false; // tilastot-välilehden "Klikkaukset ja ilmoitusmäärä" -kaavion ilmoitusmääräviivan piilotus
 let periodMonths = 0; // 0 = kaikki, -1 = mukautettu, muutoin viimeiset N kuukautta datan loppupäästä
 let customStartKey = null; // "kuukausi|vuosi"
 let customEndKey   = null;
@@ -966,10 +976,37 @@ const dataLabelsPlugin = {
                 const label = Math.round(total).toLocaleString('fi-FI');
                 ctx.save();
                 ctx.font = 'bold 10px "DM Sans", sans-serif';
-                ctx.fillStyle = '#0f172a';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                ctx.fillText(label, topX, topY - 4);
+                ctx.textBaseline = 'middle';
+                // Valkoinen "pilleri" tekstin taakse, jotta esim. ilmoitusmäärä-viiva
+                // ei mene visuaalisesti tekstin läpi.
+                const padX = 5, padY = 2;
+                const textW = ctx.measureText(label).width;
+                const pillH = 14; // 10px teksti + 2*2px padding
+                const cx = topX, cy = topY - 4 - pillH / 2;
+                const x = cx - textW / 2 - padX;
+                const y = cy - pillH / 2;
+                const w = textW + padX * 2;
+                const h = pillH;
+                const r = h / 2;
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(15,23,42,0.12)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(label, cx, cy);
                 ctx.restore();
             }
             return;
@@ -1231,6 +1268,18 @@ function animateCountUp(el, target, formatter) {
     requestAnimationFrame(step);
 }
 
+function onToggleAdsLine(checked) {
+    hideAdsLine = !checked;
+    try { localStorage.setItem('arvolaskuri.hideAdsLine', hideAdsLine ? '1' : '0'); } catch(e) {}
+    updateViewsAdsTitle();
+    updateTimelineCharts();
+}
+
+function updateViewsAdsTitle() {
+    const el = document.getElementById('viewsAdsTitle');
+    if (el) el.textContent = hideAdsLine ? 'Klikkaukset' : 'Klikkaukset ja ilmoitusmäärä';
+}
+
 function onToggleTrends(checked) {
     document.body.classList.toggle('hide-trends', !checked);
     try { localStorage.setItem('arvolaskuri.hideTrends', checked ? '0' : '1'); } catch(e) {}
@@ -1257,6 +1306,12 @@ function restoreDisplayPrefs() {
             const cb = document.getElementById('showTrendsToggle');
             if (cb) cb.checked = false;
         }
+        if (localStorage.getItem('arvolaskuri.hideAdsLine') === '1') {
+            hideAdsLine = true;
+            const cb = document.getElementById('showAdsLineToggle');
+            if (cb) cb.checked = false;
+        }
+        updateViewsAdsTitle();
         if (localStorage.getItem('arvolaskuri.hideInsights') === '1') {
             const row = document.getElementById('insightsRow');
             const reopen = document.getElementById('insightsReopen');
@@ -1606,29 +1661,32 @@ function renderSummaryView() {
         yAxisID: 'y'
     }));
 
-    // Ilmoitukset yhteensä viivana
-    const totalAdsLine = monthList.map(m => {
-        let sum = 0;
-        stores.forEach(s => {
-            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
-            if (row) sum += parseFloat(row["N Ads"])||0;
+    // Ilmoitukset yhteensä viivana (jos käyttäjä on valinnut näkyväksi)
+    if (!hideAdsLine) {
+        const totalAdsLine = monthList.map(m => {
+            let sum = 0;
+            stores.forEach(s => {
+                const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+                if (row) sum += parseFloat(row["N Ads"])||0;
+            });
+            return sum;
         });
-        return sum;
-    });
-    viewsDatasets.push({
-        label: 'Ilmoituksia yhteensä',
-        data: totalAdsLine,
-        type: 'line',
-        borderColor: '#0f172a',
-        backgroundColor: 'rgba(15,23,42,0.08)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#0f172a',
-        pointRadius: 3.5,
-        fill: false,
-        tension: 0.3,
-        yAxisID: 'y2',
-        stack: undefined
-    });
+        viewsDatasets.push({
+            label: 'Ilmoituksia yhteensä',
+            data: totalAdsLine,
+            type: 'line',
+            borderColor: '#0f172a',
+            backgroundColor: 'rgba(15,23,42,0.08)',
+            borderWidth: 2,
+            pointBackgroundColor: '#0f172a',
+            pointRadius: 1.5,
+            pointHoverRadius: 4,
+            fill: false,
+            tension: 0.3,
+            yAxisID: 'y2',
+            stack: undefined
+        });
+    }
 
     if (chartViewsAds) chartViewsAds.destroy();
     chartViewsAds = new Chart(document.getElementById('chartViewsAds'),{
@@ -1641,11 +1699,10 @@ function renderSummaryView() {
                 legend:{ position:'bottom', labels:{ font:{ size:11, weight:'600' }, padding:10, usePointStyle:true, pointStyle:'circle' } },
                 tooltip:{ callbacks:{ label:ctx=>`${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('fi-FI')}` }}
             },
-            scales:{
+            scales: Object.assign({
                 x:{ stacked:true, grid:{display:false}, ticks:{maxRotation:45} },
-                y:{ stacked:true, grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Klikkaukset'} },
-                y2:{ grid:{display:false}, beginAtZero:true, position:'right', title:{display:true, text:'Ilmoitukset (kpl)'} }
-            },
+                y:{ stacked:true, grid:{color:'#f1f5f9'}, beginAtZero:true, title:{display:true, text:'Klikkaukset'} }
+            }, hideAdsLine ? {} : { y2:{ grid:{display:false}, beginAtZero:true, position:'right', title:{display:true, text:'Ilmoitukset (kpl)'} } }),
             layout:{ padding:{ top:22 } },
             _stackTotals: true
         }
