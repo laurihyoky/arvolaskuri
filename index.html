@@ -1700,7 +1700,11 @@ function renderMovingAvgChart(stores, monthList, labels) {
             const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
             return metricValueForRow(row, metric);
         });
-        return { name: s.name, color: s.color, raw, ma: trailingMovingAverage(raw, movingAvgWindow) };
+        const clicks = monthList.map(m => {
+            const row = s.rows.find(r => r["Month of Event Date"] === m.month && String(r["Year of Event Date"]) === m.year);
+            return parseFloat(row && row["N Ad Views"]) || 0;
+        });
+        return { name: s.name, color: s.color, raw, clicks, ma: trailingMovingAverage(raw, movingAvgWindow) };
     });
 
     const datasets = perStore.map(p => ({
@@ -1718,10 +1722,17 @@ function renderMovingAvgChart(stores, monthList, labels) {
     // Yhteinen vertailuviiva = kauppojen keskiarvo (ei summa) per kuukausi, sitten liukuva keskiarvo.
     // Näin jokainen kauppakohtainen viiva on suoraan vertailukelpoinen mustaan viivaan:
     // sen yläpuolella oleva kauppa tuottaa keskimääräistä paremmin, alapuolella heikommin.
+    // Keskiarvosta jätetään pois kuukaudet, joissa kaupan klikkausmäärä on ≤ 5 — muuten
+    // juuri avatut tai hiljaiset kaupat painaisivat keskiarvoa epärealistisen alas.
+    const MIN_CLICKS_FOR_AVG = 5;
     if (perStore.length > 0) {
-        const avgPerMonth = monthList.map((_, i) =>
-            perStore.reduce((acc, p) => acc + p.raw[i], 0) / perStore.length
-        );
+        const avgPerMonth = monthList.map((_, i) => {
+            const vals = [];
+            for (const p of perStore) {
+                if ((p.clicks[i] || 0) > MIN_CLICKS_FOR_AVG) vals.push(p.raw[i]);
+            }
+            return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+        });
         const overallMa = trailingMovingAverage(avgPerMonth, movingAvgWindow);
         datasets.push({
             label: 'Kauppojen keskiarvo',
