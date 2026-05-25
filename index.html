@@ -193,6 +193,54 @@
         }
         .period-custom select:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
 
+        /* Jätä pois kuukausia -pudotusvalikko */
+        .period-exclude { position: relative; display: inline-flex; }
+        .period-exclude-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: white; border: 1px solid var(--border); border-radius: 10px;
+            padding: 6px 10px; font-family: 'DM Sans', sans-serif; font-size: 12px;
+            font-weight: 600; color: var(--text2); cursor: pointer; transition: all 0.15s;
+        }
+        .period-exclude-btn:hover { color: var(--text); border-color: #cbd5e1; }
+        .period-exclude-btn.has-excluded { color: var(--brand); border-color: var(--brand-mid); background: var(--brand-light); }
+        .period-exclude-btn svg { width: 12px; height: 12px; }
+        .period-exclude-count {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+            background: var(--brand); color: white; font-size: 11px; font-weight: 700;
+        }
+        .period-exclude-panel {
+            display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 50;
+            min-width: 240px; max-height: 320px; background: white;
+            border: 1px solid var(--border); border-radius: 12px;
+            box-shadow: 0 10px 28px rgba(15,23,42,0.12);
+            overflow: hidden; flex-direction: column;
+        }
+        .period-exclude-panel.is-open { display: flex; }
+        .period-exclude-panel-head {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border);
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--text3);
+        }
+        .period-exclude-clear {
+            background: transparent; border: none; color: var(--brand);
+            font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; padding: 2px 4px;
+        }
+        .period-exclude-clear:hover { text-decoration: underline; }
+        .period-exclude-clear[disabled] { color: var(--text3); cursor: default; text-decoration: none; }
+        .period-exclude-list { overflow-y: auto; padding: 6px; flex: 1; }
+        .period-exclude-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 8px; border-radius: 8px; cursor: pointer;
+            font-size: 13px; font-weight: 500; color: var(--text);
+            text-transform: capitalize;
+        }
+        .period-exclude-item:hover { background: var(--surface2); }
+        .period-exclude-item input { margin: 0; width: 15px; height: 15px; accent-color: var(--brand); cursor: pointer; }
+        .period-exclude-empty { padding: 14px 12px; font-size: 12px; color: var(--text3); text-align: center; }
+
         /* KPI row for Yhteenveto-view */
         .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
         .kpi-card {
@@ -512,6 +560,22 @@
                     <span>–</span>
                     <select id="periodCustomEnd" onchange="onCustomRangeChange()" aria-label="Loppukuukausi"></select>
                 </div>
+                <div class="period-exclude" id="periodExclude">
+                    <button type="button" class="period-exclude-btn" id="periodExcludeBtn"
+                            onclick="toggleExcludePanel(event)"
+                            title="Jätä esim. vajaa kuluva kuukausi pois tilastoista">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        Jätä pois kuukausia
+                        <span class="period-exclude-count" id="periodExcludeCount" style="display:none;">0</span>
+                    </button>
+                    <div class="period-exclude-panel" id="periodExcludePanel" role="dialog" aria-label="Jätä kuukausia pois">
+                        <div class="period-exclude-panel-head">
+                            <span>Valitse pois jätettävät</span>
+                            <button type="button" class="period-exclude-clear" id="periodExcludeClear" onclick="clearExcludedMonths()">Tyhjennä</button>
+                        </div>
+                        <div class="period-exclude-list" id="periodExcludeList"></div>
+                    </div>
+                </div>
                 <label class="display-toggle" title="Näytä prosenttimuutos verrattuna edelliseen yhtä pitkään jaksoon">
                     <input type="checkbox" id="showTrendsToggle" checked onchange="onToggleTrends(this.checked)">
                     Näytä muutos %
@@ -679,6 +743,7 @@ let hideAdsLine = false; // tilastot-välilehden "Klikkaukset ja ilmoitusmäär�
 let periodMonths = 0; // 0 = kaikki, -1 = mukautettu, muutoin viimeiset N kuukautta datan loppupäästä
 let customStartKey = null; // "kuukausi|vuosi"
 let customEndKey   = null;
+let excludedMonthKeys = new Set(); // "kuukausi|vuosi" -avaimet, jotka jätetään kokonaan pois tilastoista
 let activeStoreId = null; // valittu kauppa Arvolaskuri- ja CPC-välilehdillä ('__all__' = kaikki yhdistettynä)
 
 // Värit eri kaupoille (saavutettavia ja toisistaan erottuvia)
@@ -765,6 +830,7 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
         document.getElementById('cpcDateField').style.display = "block";
         document.getElementById('storeFilterCard').classList.add('active');
         document.getElementById('periodBar').style.display = 'flex';
+        populateExcludeList();
         updateMonthOptions();
         updateCpcMonthOptions();
         // Jos mukautettu jakso on jo aktiivinen, päivitä valitsinten sisältö
@@ -1061,14 +1127,16 @@ function getAllMonthLabels() {
         const m = r["Month of Event Date"], y = r["Year of Event Date"];
         if (m && y) set.add(`${m}|${y}`);
     });
-    const all = [...set].sort((a,b) => {
-        const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
-        if (ya !== yb) return Number(ya) - Number(yb);
-        return FI_MONTHS.indexOf(ma) - FI_MONTHS.indexOf(mb);
-    }).map(k => {
-        const [m,y] = k.split('|');
-        return { key: k, label: `${m} ${y}`, month: m, year: y };
-    });
+    const all = [...set]
+        .filter(k => !excludedMonthKeys.has(k))
+        .sort((a,b) => {
+            const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
+            if (ya !== yb) return Number(ya) - Number(yb);
+            return FI_MONTHS.indexOf(ma) - FI_MONTHS.indexOf(mb);
+        }).map(k => {
+            const [m,y] = k.split('|');
+            return { key: k, label: `${m} ${y}`, month: m, year: y };
+        });
 
     // Rajaa valittuun jaksoon (laskien taaksepäin datan viimeisestä kuukaudesta)
     if (periodMonths > 0 && all.length > periodMonths) {
@@ -1117,7 +1185,7 @@ function getAllMonthKeysAsc() {
     const set = new Set();
     uploadedData.forEach(r => {
         const m = r["Month of Event Date"], y = r["Year of Event Date"];
-        if (m && y) set.add(`${m}|${y}`);
+        if (m && y && !excludedMonthKeys.has(`${m}|${y}`)) set.add(`${m}|${y}`);
     });
     return [...set].sort((a,b) => {
         const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
@@ -1178,6 +1246,130 @@ function updateTimelineCharts() {
     else renderCompareView();
 }
 
+// ─── JÄTÄ POIS KUUKAUSIA -PUDOTUSVALIKKO ─────────────────────────────────────
+function getAllMonthsRaw() {
+    // Kaikki datan kuukaudet aikajärjestyksessä, mukaan lukien pois jätetyt.
+    const set = new Set();
+    uploadedData.forEach(r => {
+        const m = r["Month of Event Date"], y = r["Year of Event Date"];
+        if (m && y) set.add(`${m}|${y}`);
+    });
+    return [...set].sort((a,b) => {
+        const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
+        if (ya !== yb) return Number(ya) - Number(yb);
+        return FI_MONTHS.indexOf(ma) - FI_MONTHS.indexOf(mb);
+    }).map(k => {
+        const [m,y] = k.split('|');
+        return { key: k, label: `${m} ${y}`, month: m, year: y };
+    });
+}
+
+function populateExcludeList() {
+    const list = document.getElementById('periodExcludeList');
+    if (!list) return;
+    const all = getAllMonthsRaw();
+    // Siivoa localStoragesta vanhentuneet avaimet, joita ei enää löydy datasta
+    const validKeys = new Set(all.map(m => m.key));
+    let changed = false;
+    excludedMonthKeys.forEach(k => { if (!validKeys.has(k)) { excludedMonthKeys.delete(k); changed = true; } });
+    if (changed) saveExcludedMonths();
+
+    if (!all.length) {
+        list.innerHTML = '<div class="period-exclude-empty">Lataa ensin Excel-tiedosto.</div>';
+    } else {
+        // Uusin ensin — yleensä juuri vajaa kuluva kuukausi halutaan poistaa
+        const reversed = [...all].reverse();
+        list.innerHTML = reversed.map(m => {
+            const checked = excludedMonthKeys.has(m.key) ? 'checked' : '';
+            const safeKey = m.key.replace(/"/g, '&quot;');
+            return `<label class="period-exclude-item">
+                <input type="checkbox" data-key="${safeKey}" ${checked} onchange="onToggleExcludeMonth(this.dataset.key, this.checked)">
+                <span>${m.label}</span>
+            </label>`;
+        }).join('');
+    }
+    updateExcludeBtnState();
+}
+
+function updateExcludeBtnState() {
+    const btn = document.getElementById('periodExcludeBtn');
+    const count = document.getElementById('periodExcludeCount');
+    const clear = document.getElementById('periodExcludeClear');
+    if (!btn || !count) return;
+    const n = excludedMonthKeys.size;
+    btn.classList.toggle('has-excluded', n > 0);
+    count.style.display = n > 0 ? 'inline-flex' : 'none';
+    count.textContent = String(n);
+    if (clear) clear.disabled = n === 0;
+}
+
+function toggleExcludePanel(e) {
+    if (e) e.stopPropagation();
+    const panel = document.getElementById('periodExcludePanel');
+    if (!panel) return;
+    panel.classList.toggle('is-open');
+}
+
+function closeExcludePanel() {
+    const panel = document.getElementById('periodExcludePanel');
+    if (panel) panel.classList.remove('is-open');
+}
+
+function onToggleExcludeMonth(key, checked) {
+    if (checked) excludedMonthKeys.add(key);
+    else excludedMonthKeys.delete(key);
+    saveExcludedMonths();
+    updateExcludeBtnState();
+    // Jos mukautettu aikaväli oli aktiivinen, päivitä valitsimet — pois jätetty
+    // kuukausi ei saa jäädä alku-/loppuvalinnaksi.
+    if (periodMonths === -1) {
+        const all = getAllMonthKeysAsc();
+        if (customStartKey && !all.some(m => m.key === customStartKey)) {
+            customStartKey = all.length ? all[0].key : null;
+        }
+        if (customEndKey && !all.some(m => m.key === customEndKey)) {
+            customEndKey = all.length ? all[all.length-1].key : null;
+        }
+        populateCustomRangeSelects();
+    }
+    updatePeriodRangeText();
+    updateTimelineCharts();
+}
+
+function clearExcludedMonths() {
+    if (!excludedMonthKeys.size) return;
+    excludedMonthKeys.clear();
+    saveExcludedMonths();
+    populateExcludeList();
+    updatePeriodRangeText();
+    updateTimelineCharts();
+}
+
+function saveExcludedMonths() {
+    try {
+        localStorage.setItem('arvolaskuri.excludedMonths', JSON.stringify([...excludedMonthKeys]));
+    } catch(e) {}
+}
+
+function loadExcludedMonths() {
+    try {
+        const raw = localStorage.getItem('arvolaskuri.excludedMonths');
+        if (!raw) return;
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) excludedMonthKeys = new Set(arr.filter(x => typeof x === 'string'));
+    } catch(e) {}
+}
+
+// Sulje pudotusvalikko klikatessa sen ulkopuolelle tai Esc:llä
+document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('periodExclude');
+    if (!wrap) return;
+    if (!wrap.contains(e.target)) closeExcludePanel();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeExcludePanel();
+});
+
 // ─── KPI-APUFUNKTIOT ─────────────────────────────────────────────────────────
 function animateCountUp(el, target, formatter) {
     formatter = formatter || (v => Math.round(v).toLocaleString('fi-FI'));
@@ -1233,6 +1425,7 @@ function toggleInsights() {
 }
 
 function restoreDisplayPrefs() {
+    loadExcludedMonths();
     try {
         if (localStorage.getItem('arvolaskuri.hideTrends') === '1') {
             document.body.classList.add('hide-trends');
@@ -1305,7 +1498,7 @@ function computePreviousPeriodTotals(stores) {
     const set = new Set();
     uploadedData.forEach(r => {
         const m = r["Month of Event Date"], y = r["Year of Event Date"];
-        if (m && y) set.add(`${m}|${y}`);
+        if (m && y && !excludedMonthKeys.has(`${m}|${y}`)) set.add(`${m}|${y}`);
     });
     const allMonths = [...set].sort((a,b) => {
         const [ma,ya] = a.split('|'), [mb,yb] = b.split('|');
