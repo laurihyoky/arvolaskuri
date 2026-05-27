@@ -1917,8 +1917,10 @@ function renderMovingAvgChart(stores, monthList, labels) {
     // sen yläpuolella oleva kauppa tuottaa keskimääräistä paremmin, alapuolella heikommin.
     // Keskiarvosta jätetään pois kuukaudet, joissa kaupan klikkausmäärä on ≤ 5 — muuten
     // juuri avatut tai hiljaiset kaupat painaisivat keskiarvoa epärealistisen alas.
+    // Yhden kaupan tapauksessa "Kauppojen keskiarvo" olisi sama viiva kuin
+    // kaupan oma sarja → jätetään pois turhana.
     const MIN_CLICKS_FOR_AVG = 5;
-    if (perStore.length > 0) {
+    if (perStore.length > 1) {
         const avgPerMonth = monthList.map((_, i) => {
             const vals = [];
             for (const p of perStore) {
