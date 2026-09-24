@@ -98,6 +98,16 @@
         .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
         .toggle-switch input:checked + .toggle-slider { background: var(--brand); }
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); }
+        .impact-assumption { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 14px; }
+        .impact-assumption summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--brand); font-size: 12px; font-weight: 700; }
+        .impact-assumption summary::-webkit-details-marker { display: none; }
+        .impact-assumption summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
+        .impact-assumption-label { display: flex; align-items: center; gap: 6px; }
+        .impact-assumption-dots { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 30px; border: 1px solid var(--brand-mid); border-radius: 8px; background: var(--brand-light); font-size: 22px; line-height: 1; letter-spacing: 1px; padding-bottom: 7px; }
+        .impact-settings-panel { margin-top: 12px; padding: 14px; border: 1px solid var(--brand-mid); border-radius: 10px; background: var(--brand-light); }
+        .impact-settings-panel p { color: var(--text2); font-size: 11px; line-height: 1.5; margin: 8px 0 0; }
+        .impact-warning { margin: 10px 0; padding: 10px; border-radius: 8px; background: #fff3e9; color: #9a3412; font-size: 12px; line-height: 1.4; }
+        .impact-warning:empty { display: none; }
 
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
         .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
@@ -253,10 +263,10 @@
         .kpi-card:has(.tooltip)::before { border-top-left-radius: var(--radius); border-bottom-left-radius: var(--radius); }
         .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(15,23,42,0.08); }
         .kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kpi-color, var(--brand)); }
-        .kpi-card.kpi-color-brand  { --kpi-color: #f94f55; }
-        .kpi-card.kpi-color-blue   { --kpi-color: #005eff; }
-        .kpi-card.kpi-color-green  { --kpi-color: #10b981; }
-        .kpi-card.kpi-color-orange { --kpi-color: #f59e0b; }
+        .kpi-card.kpi-color-brand  { --kpi-color: var(--brand); }
+        .kpi-card.kpi-color-blue   { --kpi-color: color-mix(in srgb, var(--brand) 72%, white); }
+        .kpi-card.kpi-color-green  { --kpi-color: color-mix(in srgb, var(--brand) 80%, #172b45); }
+        .kpi-card.kpi-color-orange { --kpi-color: color-mix(in srgb, var(--brand) 58%, white); }
         .kpi-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
         .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
         .kpi-trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; line-height: 1; }
@@ -321,10 +331,10 @@
             background: var(--insight-color, var(--brand)); color: white;
             border-radius: 8px; font-size: 12px; font-weight: 800;
         }
-        .insight-item.color-brand  { --insight-color: #f94f55; }
-        .insight-item.color-blue   { --insight-color: #005eff; }
-        .insight-item.color-green  { --insight-color: #10b981; }
-        .insight-item.color-orange { --insight-color: #f59e0b; }
+        .insight-item.color-brand  { --insight-color: color-mix(in srgb, var(--brand) 60%, #172b45); }
+        .insight-item.color-blue   { --insight-color: color-mix(in srgb, var(--brand) 70%, #172b45); }
+        .insight-item.color-green  { --insight-color: color-mix(in srgb, var(--brand) 50%, #172b45); }
+        .insight-item.color-orange { --insight-color: color-mix(in srgb, var(--brand) 65%, #172b45); }
         .insight-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 3px; }
         .insight-value { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; line-height: 1.25; }
         .insight-sub { font-size: 12px; color: var(--text2); margin-top: 2px; font-weight: 500; }
@@ -451,6 +461,22 @@
                     <div class="field">
                         <label style="color:var(--brand)">Arvioidut liidit päivityksellä</label>
                         <input type="number" id="leadsB_manual" class="highlight-input" oninput="calculate(false)">
+                    </div>
+                    <div class="impact-assumption">
+                        <details>
+                            <summary aria-label="Muokkaa tähti-ilmoitusten vaikutusarviota" title="Muokkaa tähti-ilmoitusten vaikutusarviota">
+                                <span class="impact-assumption-label">Tähti-ilmoitusten vaikutusarvio <span id="impactFactorValue">+3,7×</span></span>
+                                <span class="impact-assumption-dots" aria-hidden="true">···</span>
+                            </summary>
+                            <div class="impact-settings-panel">
+                                <div class="field">
+                                    <label for="impactFactor">Liidien lisäkerroin tähditettyä ilmoitusta kohden</label>
+                                    <input id="impactFactor" type="number" value="3.7" min="0" max="100" step="0.1" oninput="calculate(true)">
+                                </div>
+                                <p>Oletusarvo 3,7 perustuu Sales Insight -dataan. Malli käyttää valitsemaasi lisäkerrointa jokaiselle tähditetylle ilmoitukselle. Säädä arvio yrityksellesi sopivaksi.</p>
+                            </div>
+                        </details>
+                        <div class="impact-warning" id="impactWarning" role="status"></div>
                     </div>
                 </div>
             </div>
@@ -750,18 +776,7 @@ let excludedMonthKeys = new Set(); // "kuukausi|vuosi" -avaimet, jotka jätetä�
 let activeStoreId = null; // valittu kauppa Arvolaskuri- ja CPC-välilehdillä ('__all__' = kaikki yhdistettynä)
 
 // Värit eri kaupoille (saavutettavia ja toisistaan erottuvia)
-const STORE_COLORS = [
-    '#f94f55', // Tori-punainen
-    '#005eff', // sininen
-    '#10b981', // vihreä
-    '#f59e0b', // oranssi
-    '#8b5cf6', // violetti
-    '#ec4899', // pinkki
-    '#14b8a6', // teal
-    '#f97316', // tumma oranssi
-    '#6366f1', // indigo
-    '#84cc16'  // limetti
-];
+const STORE_COLORS = ['#f94f55','#ae2941','#fc8b8c','#d84962','#8e2138','#ffb2b1','#c73c4d','#ef6f77','#973f48','#fe9d9f'];
 const colorForStore = (idx) => STORE_COLORS[idx % STORE_COLORS.length];
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
@@ -1032,7 +1047,7 @@ const dataLabelsPlugin = {
                 else                label = Math.round(val).toLocaleString('fi-FI');
                 ctx.save();
                 ctx.font = 'bold 11px "DM Sans", sans-serif';
-                ctx.fillStyle = isLine ? '#f94f55' : '#334155';
+                ctx.fillStyle = isLine ? (ds.borderColor || '#0f172a') : '#334155';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'bottom';
                 ctx.fillText(label, el.x, el.y - 4);
@@ -1553,7 +1568,7 @@ function renderChannelDonut(channelTotals) {
             labels: ['Viestit', 'Verkko-ohjaukset', 'Puhelusoitot'],
             datasets: [{
                 data: [channelTotals.conv, channelTotals.home, channelTotals.phone],
-                backgroundColor: ['#f94f55', '#005eff', '#10b981'],
+                backgroundColor: [STORE_COLORS[0], STORE_COLORS[2], STORE_COLORS[1]],
                 borderColor: '#ffffff',
                 borderWidth: 3,
                 hoverOffset: 6
@@ -2298,7 +2313,20 @@ function calculate(autoUpdateLeads) {
     const closing = (parseFloat(document.getElementById('closing').value)||0)/100;
     const avg     = parseFloat(document.getElementById('avgPrice').value)||0;
     const costA   = parseFloat(document.getElementById('priceA').value)*timeMultiplier;
-    const M=3.7, sA=Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars,n);
+    const factorInput = document.getElementById('impactFactor');
+    const M = factorInput.value === '' ? NaN : Number(factorInput.value);
+    const validFactor = Number.isFinite(M) && M >= 0 && M <= 100;
+    document.getElementById('impactFactorValue').textContent = validFactor ? `+${M.toLocaleString('fi-FI')}×` : '—';
+    document.getElementById('impactWarning').textContent = validFactor ? '' : 'Syötä vaikutuskertoimeksi luku väliltä 0–100.';
+    if (!validFactor) {
+        document.getElementById('leadsB_manual').value = '';
+        document.getElementById('proposalHint').classList.add('hidden');
+        ['uiRevA','uiRevB'].forEach(id => document.getElementById(id).textContent = '—');
+        ['uiRoiA','uiRoiB'].forEach(id => document.getElementById(id).textContent = 'ROI: —');
+        if (chartROI) { chartROI.destroy(); chartROI = null; }
+        return;
+    }
+    const sA=Math.min(PACKAGES[document.getElementById('pkgA').selectedIndex].stars,n);
     const v = leadsA/(n+M*sA);
 
     if (autoUpdateLeads) {
@@ -2412,5 +2440,10 @@ function calculateCPC() {
 
 window.onload = init;
 </script>
+<div id="vend-shell" aria-live="polite"></div>
+<nav id="vend-calculator-nav" class="vend-calculator-nav" aria-label="Calculator navigation"></nav>
+<link rel="stylesheet" href="vend-value-shell.css">
+<script src="vend-value-config.js"></script>
+<script src="vend-value-shell.js"></script>
 </body>
 </html>
