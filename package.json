@@ -1,0 +1,21 @@
+{
+  "name": "@workspace/vend-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/copy-vendors.js",
+    "dev": "vite --host 0.0.0.0",
+    "build": "node scripts/copy-vendors.js && vite build",
+    "serve": "vite preview --host 0.0.0.0",
+    "check": "node scripts/check.js",
+    "typecheck": "npm run check"
+  },
+  "dependencies": {
+    "chart.js": "4.4.0",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "vite": "6.3.5"
+  }
+}
