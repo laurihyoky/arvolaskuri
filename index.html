@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="vendor/xlsx.full.min.js"></script>
     <script src="vendor/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="tori-statistics.css">
     <style>
         :root {
             --brand: #f94f55;
@@ -1042,6 +1043,7 @@ const dataLabelsPlugin = {
                 const isLine = ds.type === 'line' || meta.type === 'line';
                 let label;
                 if (ds._cpc)        label = Number(val).toFixed(3) + ' €';
+                else if (Number.isInteger(ds._labelDigits)) label = Number(val).toLocaleString('fi-FI', { minimumFractionDigits: ds._labelDigits, maximumFractionDigits: ds._labelDigits });
                 else if (isLine)    label = Math.round(val).toLocaleString('fi-FI');
                 else if (ds._eur)   label = Math.round(val).toLocaleString('fi-FI') + ' €';
                 else                label = Math.round(val).toLocaleString('fi-FI');
@@ -1554,7 +1556,7 @@ function computePreviousPeriodTotals(stores) {
             n++;
         });
     });
-    return { leads, views, avgAds: n > 0 ? Math.round(ads / n) : 0 };
+    return { leads, views, ads, monthsWithData: n, avgAds: n > 0 ? Math.round(ads / n) : 0 };
 }
 
 function renderChannelDonut(channelTotals) {
@@ -1866,6 +1868,7 @@ function renderSummaryView() {
             _stackTotals: true
         }
     });
+    if (window.ToriStats) window.ToriStats.afterSummaryRender(stores, monthList);
 }
 
 // ─── LIUKUVA KESKIARVO -KAAVIO ───────────────────────────────────────────────
@@ -2445,5 +2448,6 @@ window.onload = init;
 <link rel="stylesheet" href="vend-value-shell.css">
 <script src="vend-value-config.js"></script>
 <script src="vend-value-shell.js"></script>
+<script src="tori-statistics.js"></script>
 </body>
 </html>
