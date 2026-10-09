@@ -777,11 +777,12 @@ let excludedMonthKeys = new Set(); // "kuukausi|vuosi" -avaimet, jotka j채tet채�
 let activeStoreId = null; // valittu kauppa Arvolaskuri- ja CPC-v채lilehdill채 ('__all__' = kaikki yhdistettyn채)
 
 // V채rit eri kaupoille (saavutettavia ja toisistaan erottuvia)
-const STORE_COLORS = ['#f94f55','#ae2941','#fc8b8c','#d84962','#8e2138','#ffb2b1','#c73c4d','#ef6f77','#973f48','#fe9d9f'];
+const STORE_COLORS = ['#7A2822','#ADDDFF','#2FA944','#EA6B1F','#7046C7','#008FAD','#D72B80','#087EBB','#91B51C','#B33A2B','#009B72','#B45A11','#C49300','#3D58C8','#A930A0','#19723D','#C74F44'];
 const colorForStore = (idx) => STORE_COLORS[idx % STORE_COLORS.length];
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#64748b';
+Chart.defaults.devicePixelRatio = Math.max(2, window.devicePixelRatio || 1);
 
 function init() {
     ['pkgA','pkgB','cpcPkg'].forEach(id => {
@@ -1773,6 +1774,7 @@ function renderSummaryView() {
                  + (parseFloat(row["N Phone Leads"])||0);
         }),
         backgroundColor: s.color,
+        borderWidth: 0,
         borderRadius: 4,
         borderSkipped: false,
         stack: 'leads'
@@ -1814,6 +1816,7 @@ function renderSummaryView() {
             return row ? (parseFloat(row["N Ad Views"])||0) : 0;
         }),
         backgroundColor: s.color,
+        borderWidth: 0,
         borderRadius: 4,
         borderSkipped: false,
         stack: 'views',

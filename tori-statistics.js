@@ -19,7 +19,6 @@
     var KPI_CHOICES = ['stores', 'leads', 'clicks', 'ads', 'leadsPerAd', 'clicksPerAd', 'leadsPer100Clicks'];
     var TIMELINE_METRICS = ['leads', 'clicks', 'ads', 'leadsPerAd', 'clicksPerAd', 'leadsPer100Clicks'];
     var TIMELINE_MODES = { stacked: 'Pinottu kaupoittain (alkuperäinen)', chain: 'Ketju yhteensä', compare: 'Valittujen kauppojen vertailu' };
-    var COMPARE_COLORS = ['#f94f55', '#8b2034', '#ef8590', '#b83149', '#65182b', '#dc6578', '#a34858', '#ce2949'];
     var DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3]];
     var BEST_STORE_METRICS = {
         leadsPerAd: 'Eniten liidejä / ilmoitus (alkuperäinen)',
@@ -32,6 +31,7 @@
         kpis: ['stores', 'leads', 'clicks', 'ads'],
         showTable: false,
         showBubbles: false,
+        groupedBars: false,
         insightMetric: 'leadsPerAd',
         bestStoreMetric: 'leadsPerAd',
         timelineMode: 'stacked',
@@ -56,6 +56,7 @@
                 if (Array.isArray(p.kpis) && p.kpis.length === 4 && p.kpis.every(function (k) { return KPI_CHOICES.indexOf(k) >= 0; })) s.kpis = p.kpis;
                 if (typeof p.showTable === 'boolean') s.showTable = p.showTable;
                 if (typeof p.showBubbles === 'boolean') s.showBubbles = p.showBubbles;
+                if (typeof p.groupedBars === 'boolean') s.groupedBars = p.groupedBars;
                 if (p.insightMetric === 'leadsPerAd' || p.insightMetric === 'clicksPerAd') s.insightMetric = p.insightMetric;
                 if (Object.prototype.hasOwnProperty.call(BEST_STORE_METRICS, p.bestStoreMetric)) s.bestStoreMetric = p.bestStoreMetric;
                 if (TIMELINE_MODES[p.timelineMode]) s.timelineMode = p.timelineMode;
@@ -202,6 +203,13 @@
             modeWrap.appendChild(lab); ui.modeRadios.push(r);
         });
         g2.appendChild(modeWrap);
+        var groupedLabel = el('label', { class: 'ts-switch-row' });
+        ui.groupedToggle = el('input', { type: 'checkbox', id: 'tsGroupedBars', 'data-testid': 'toggle-grouped-bars' });
+        ui.groupedToggle.addEventListener('change', function (e) { state.groupedBars = e.target.checked; commit(); });
+        groupedLabel.appendChild(ui.groupedToggle);
+        groupedLabel.appendChild(el('span', null, 'Vierekkäiset pylväät kauppojen vertailuun'));
+        g2.appendChild(groupedLabel);
+        g2.appendChild(el('p', { class: 'ts-hint' }, 'Koskee kaupoittaisia pylväskaavioita: liidit ja klikkaukset. Arvot näkyvät pylväiden yläpuolella ja osoittamalla pylvästä. Selkein 2–5 kaupalla; viivakaaviot ja ketjun yhteissumma eivät muutu.'));
         var mf = el('div', { class: 'ts-field' });
         mf.appendChild(el('label', { for: 'tsTimelineMetric' }, 'Mittari'));
         ui.metricSelect = el('select', { id: 'tsTimelineMetric', 'data-testid': 'select-timeline-metric', 'aria-describedby': 'tsMetricHint' });
@@ -331,6 +339,7 @@
         for (var i = 0; i < 4; i++) if (!isDefaultKpi(i)) n++;
         if (state.showTable) n++;
         if (state.showBubbles) n++;
+        if (state.groupedBars) n++;
         if (state.insightMetric !== DEFAULTS.insightMetric) n++;
         if (state.bestStoreMetric !== DEFAULTS.bestStoreMetric) n++;
         if (!isDefaultTimeline()) n++;
@@ -345,6 +354,7 @@
             : METRICS[state.timelineMetric].ratio ? 'Suhdeluku lasketaan kuukauden summista; puuttuva data näkyy aukkona.' : '';
         ui.tableToggle.checked = state.showTable;
         ui.bubbleToggle.checked = state.showBubbles;
+        ui.groupedToggle.checked = state.groupedBars;
         optionsFor(ui.insightSelect, ['leadsPerAd', 'clicksPerAd'], state.insightMetric);
         ui.bestStoreSelect.textContent = '';
         Object.keys(BEST_STORE_METRICS).forEach(function (key) {
@@ -513,7 +523,8 @@
                 return {
                     label: s.name,
                     data: monthList.map(function (m) { var r = findRow(s, m); return r ? rowVals(r)[key] : 0; }),
-                    backgroundColor: s.color, borderRadius: 4, borderSkipped: false, stack: 'ts'
+                    backgroundColor: s.color,
+                    borderWidth: 0, borderRadius: 4, borderSkipped: false, stack: 'ts'
                 };
             });
             setTimelineTitle(metricName + ' kaupoittain');
@@ -531,12 +542,12 @@
         } else {
             var cmp = compareStores(stores);
             datasets = cmp.map(function (s, i) {
-                var color = COMPARE_COLORS[i % COMPARE_COLORS.length];
+                var color = s.color;
                 return {
                     label: s.name,
                     data: monthList.map(function (m) { var r = findRow(s, m); if (!r) return null; var a = emptyAgg(); addRow(a, r); return seriesValue(a, key); }),
                     borderColor: color, backgroundColor: color, borderWidth: 2,
-                    borderDash: DASHES[Math.floor(i / COMPARE_COLORS.length) % DASHES.length],
+                    borderDash: DASHES[Math.floor(i / 17) % DASHES.length],
                     pointRadius: 2.5, pointHoverRadius: 5, tension: 0.25, spanGaps: false, fill: false
                 };
             });
@@ -735,6 +746,22 @@
         table.appendChild(tbody); ui.bubbleScroll.appendChild(table);
     }
 
+    function applyBarLayout(chart) {
+        if (!chart || !state.groupedBars) return;
+        var bars = chart.data.datasets.filter(function (ds) {
+            return (ds.type || chart.config.type) === 'bar';
+        });
+        if (bars.length < 2) return;
+        chart.options.scales.x.stacked = false;
+        chart.options.scales.y.stacked = false;
+        bars.forEach(function (ds) { delete ds.stack; });
+        chart.options._stackTotals = false;
+        // Existing compact labels scale to the bar width and omit the reference line.
+        chart.options._skipLabels = false;
+        chart.options._miniLabels = true;
+        chart.update('none');
+    }
+
     // ─── Julkinen koukku ──────────────────────────────────────────────────
     function afterSummaryRender(stores, monthList) {
         if (!ui.panel && !buildUi()) return;
@@ -746,6 +773,8 @@
         try { renderTimeline(last.stores, last.monthList); } catch (e) { console.error('ToriStats timeline', e); }
         try { renderTable(); } catch (e) { console.error('ToriStats table', e); }
         try { renderBubbles(last.stores, last.monthList); } catch (e) { console.error('ToriStats bubbles', e); }
+        if (typeof chartTimeline !== 'undefined') applyBarLayout(chartTimeline);
+        if (typeof chartViewsAds !== 'undefined') applyBarLayout(chartViewsAds);
         renderCompareList();
     }
 
