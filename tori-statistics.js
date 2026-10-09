@@ -752,9 +752,19 @@
             return (ds.type || chart.config.type) === 'bar';
         });
         if (bars.length < 2) return;
+        // The constructor already queued a stacked animation. update('none') alone
+        // does not cancel it: its old targets can overwrite the new grouped geometry.
+        chart.stop();
         chart.options.scales.x.stacked = false;
         chart.options.scales.y.stacked = false;
-        bars.forEach(function (ds) { delete ds.stack; });
+        bars.forEach(function (ds) {
+            delete ds.stack;
+            // Explicit corners also round former inner segments of the stack.
+            if (typeof ds.borderRadius === 'number') {
+                var radius = ds.borderRadius;
+                ds.borderRadius = { topLeft: radius, topRight: radius, bottomLeft: radius, bottomRight: radius };
+            }
+        });
         chart.options._stackTotals = false;
         // Existing compact labels scale to the bar width and omit the reference line.
         chart.options._skipLabels = false;
