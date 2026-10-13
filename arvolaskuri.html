@@ -527,7 +527,7 @@
                 </div>
                 <div class="field"><label>Katselukerrat (Klikkaukset) / kk</label><input type="number" id="cpcClicks" value="11000" oninput="calculateCPC()"></div>
                 <div class="field"><label>Valitse paketti</label><select id="cpcPkg" onchange="calculateCPC()"></select></div>
-                <div class="field"><label>Paketin hinta (€)</label><select id="cpcPrice" onchange="calculateCPC()"></select></div>
+                <div class="field"><label>Paketin hinta (€)</label><select id="cpcPrice" onchange="calculateCPC()"></select><div id="customCpcPriceField" hidden style="margin-top:8px"><label for="customCpcPrice">Oma kuukausihinta (€)</label><input id="customCpcPrice" type="number" min="0" step="0.01" value="99" required oninput="calculateCPC()"></div></div>
                 <div class="divider"></div>
                 <div class="field"><label>Vertailun CPC (Google/Meta) €</label><input type="number" id="compCPC" value="0.40" step="0.05" oninput="calculateCPC()"></div>
             </div>
@@ -793,6 +793,7 @@ function init() {
     });
     document.getElementById('pkgA').selectedIndex = 3;
     document.getElementById('priceA').add(new Option('Kirjoita hinta itse', 'custom'));
+    document.getElementById('cpcPrice').add(new Option('Kirjoita hinta itse', 'custom'));
     document.getElementById('pkgB').selectedIndex = 4;
     document.getElementById('cpcPkg').selectedIndex = 3;
     syncPrice('A'); syncPrice('B');
@@ -2415,8 +2416,15 @@ function calculate(autoUpdateLeads) {
 }
 
 function calculateCPC() {
+    const customPrice = document.getElementById('customCpcPrice');
+    const useCustomPrice = document.getElementById('cpcPrice').value === 'custom';
+    document.getElementById('customCpcPriceField').hidden = !useCustomPrice;
+    if (useCustomPrice && !customPrice.checkValidity()) {
+        customPrice.reportValidity();
+        return;
+    }
     const clicks=parseFloat(document.getElementById('cpcClicks').value)||1;
-    const price =parseFloat(document.getElementById('cpcPrice').value)||0;
+    const price =useCustomPrice ? customPrice.valueAsNumber : (parseFloat(document.getElementById('cpcPrice').value)||0);
     const comp  =parseFloat(document.getElementById('compCPC').value)||0;
     const tori  =price/clicks;
     document.getElementById('uiToriCPC').textContent=tori.toFixed(3)+' €';
