@@ -443,7 +443,7 @@
                         <input type="number" id="leadsA" value="280" oninput="calculate(true)">
                     </div>
                 </div>
-                <div class="field"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate(true)"></select></div>
+                <div class="field"><label>Nykyinen hinta (€)</label><select id="priceA" onchange="calculate(true)"></select><div id="customPriceAField" hidden style="margin-top:8px"><label for="customPriceA">Oma kuukausihinta (€)</label><input id="customPriceA" type="number" min="0" step="0.01" value="99" required oninput="calculate(false)"></div></div>
                 <div class="divider"></div>
                 <div class="field-row">
                     <div class="field"><label>Konversio %</label><input type="number" id="closing" value="2.0" step="0.5" oninput="calculate(false)"></div>
@@ -792,6 +792,7 @@ function init() {
         PRICE_POINTS.forEach(v => document.getElementById(id).innerHTML += `<option value="${v}">${v} €</option>`);
     });
     document.getElementById('pkgA').selectedIndex = 3;
+    document.getElementById('priceA').add(new Option('Kirjoita hinta itse', 'custom'));
     document.getElementById('pkgB').selectedIndex = 4;
     document.getElementById('cpcPkg').selectedIndex = 3;
     syncPrice('A'); syncPrice('B');
@@ -2309,6 +2310,13 @@ function syncPrice(type) {
 }
 
 function calculate(autoUpdateLeads) {
+    const customPrice = document.getElementById('customPriceA');
+    const useCustomPrice = document.getElementById('priceA').value === 'custom';
+    document.getElementById('customPriceAField').hidden = !useCustomPrice;
+    if (useCustomPrice && !customPrice.checkValidity()) {
+        customPrice.reportValidity();
+        return;
+    }
     const showProp = document.getElementById('showProposal').checked;
     document.getElementById('proposalInputs').classList.toggle('hidden', !showProp);
     document.getElementById('uiCardB').classList.toggle('hidden', !showProp);
@@ -2318,7 +2326,7 @@ function calculate(autoUpdateLeads) {
     const leadsA  = parseFloat(document.getElementById('leadsA').value)||0;
     const closing = (parseFloat(document.getElementById('closing').value)||0)/100;
     const avg     = parseFloat(document.getElementById('avgPrice').value)||0;
-    const costA   = parseFloat(document.getElementById('priceA').value)*timeMultiplier;
+    const costA   = (useCustomPrice ? customPrice.valueAsNumber : parseFloat(document.getElementById('priceA').value))*timeMultiplier;
     const factorInput = document.getElementById('impactFactor');
     const M = factorInput.value === '' ? NaN : Number(factorInput.value);
     const validFactor = Number.isFinite(M) && M >= 0 && M <= 100;
